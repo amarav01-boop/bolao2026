@@ -6,7 +6,7 @@ const usernameSchema = z
   .string()
   .trim()
   .min(5, 'Informe um e-mail válido.')
-  .max(254, 'O e-mail deve ter no máximo 254 caracteres.')
+  .max(191, 'O e-mail deve ter no máximo 191 caracteres.')
   .email('Informe um e-mail válido.')
   .transform((value) => value.toLowerCase());
 
