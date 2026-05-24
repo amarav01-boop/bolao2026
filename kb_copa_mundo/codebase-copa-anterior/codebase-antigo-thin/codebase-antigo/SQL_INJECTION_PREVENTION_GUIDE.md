@@ -341,7 +341,7 @@ if (!isset($_SESSION["userid"]) || $_SESSION["userid"] != 1) {
 }
 
 // SEGURANÇA: Whitelist apenas SELECT (leitura)
-$dbsql = trim($_POST["txtSQL"] ?? "");
+$dbsql = trim($_POST["txtSQL"] ? "");
 
 if ($dbsql && strtoupper(substr(trim($dbsql), 0, 6)) !== "SELECT") {
     die("Apenas queries SELECT são permitidas!");

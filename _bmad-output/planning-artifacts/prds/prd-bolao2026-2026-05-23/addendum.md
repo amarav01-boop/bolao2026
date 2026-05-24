@@ -1,4 +1,4 @@
-# PRD Addendum: Bolao 2026
+﻿# PRD Addendum: Bolao 2026
 
 ## Source Inputs
 
@@ -18,6 +18,9 @@
 
 ## Implementation Notes For Architecture
 
+- Recommended frontend stack: HTML, CSS, and JavaScript.
+- Recommended backend stack: Node.js.
+- Recommended relational database: MariaDB/MySQL.
 - Backend must enforce prediction reveal and deadline lock. Frontend hiding is not sufficient.
 - Store prediction intent state: explicit prediction vs defaulted prediction.
 - Store ranking snapshots or previous rank values to compute movement arrows.
@@ -33,3 +36,4 @@
 - Full social feed.
 - Automated knockout bracket generation.
 - Advanced audit log UI.
+

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bolão 2026 - Design System</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+
+      /* COLORS */
+
+      --bg-primary: #0A0A0A;
+      --bg-secondary: #151515;
+      --surface: #1E1E1E;
+      --surface-hover: #2A2A2A;
+
+      --accent-green: #00E676;
+      --accent-blue: #00B0FF;
+      --accent-red: #FF3D57;
+      --accent-gold: #FFC400;
+
+      --text-primary: #FFFFFF;
+      --text-secondary: #BDBDBD;
+      --text-muted: #7A7A7A;
+
+      --border: #333333;
+
+      /* SPACING */
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-xxl: 48px;
+
+      /* RADIUS */
+
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+
+      /* SHADOW */
+
+      --shadow-glow:
+        0 0 20px rgba(0, 230, 118, 0.15);
+
+      /* TYPOGRAPHY */
+
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+
+      /* TRANSITIONS */
+
+      --transition-fast: 0.2s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      padding: 40px;
+      line-height: 1.5;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: var(--font-heading);
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      font-size: 56px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 32px;
+      margin-bottom: 24px;
+      margin-top: 64px;
+    }
+
+    h3 {
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      color: var(--text-secondary);
+    }
+
+    .hero {
+      margin-bottom: 48px;
+    }
+
+    .hero p {
+      max-width: 700px;
+      font-size: 18px;
+    }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      transition: var(--transition-fast);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      background: var(--surface-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .color-box {
+      height: 100px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .token {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .typography-sample {
+      margin-bottom: 20px;
+    }
+
+    .display {
+      font-size: 64px;
+      font-family: var(--font-heading);
+    }
+
+    .headline {
+      font-size: 40px;
+      font-family: var(--font-heading);
+    }
+
+    .body-large {
+      font-size: 20px;
+    }
+
+    .body {
+      font-size: 16px;
+    }
+
+    .caption {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .btn {
+      border: none;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-family: var(--font-body);
+      font-size: 15px;
+    }
+
+    .btn:hover {
+      transform: scale(1.03);
+    }
+
+    .btn-primary {
+      background: var(--accent-green);
+      color: #000;
+    }
+
+    .btn-secondary {
+      background: var(--accent-blue);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: var(--accent-red);
+      color: white;
+    }
+
+    .match-card {
+      background: linear-gradient(
+        145deg,
+        #1E1E1E,
+        #121212
+      );
+
+      border-radius: 24px;
+      padding: 28px;
+      border: 1px solid #2A2A2A;
+
+      max-width: 420px;
+
+      box-shadow:
+        0 0 20px rgba(0,230,118,0.08);
+    }
+
+    .match-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .match-title {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: var(--font-heading);
+    }
+
+    .live-badge {
+      background: var(--accent-red);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .score {
+      font-size: 72px;
+      font-family: var(--font-heading);
+      margin: 20px 0;
+    }
+
+    .prediction {
+      background: rgba(255,255,255,0.05);
+      padding: 16px;
+      border-radius: 14px;
+      margin-top: 24px;
+    }
+
+    .ranking {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 20px;
+    }
+
+    .ranking th,
+    .ranking td {
+      padding: 18px;
+      text-align: left;
+    }
+
+    .ranking thead {
+      background: #1E1E1E;
+    }
+
+    .ranking tbody tr {
+      border-bottom: 1px solid #2A2A2A;
+    }
+
+    .ranking tbody tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .chip {
+      background: #222;
+      border: 1px solid #333;
+      padding: 12px 18px;
+      border-radius: 999px;
+      transition: var(--transition-fast);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .chip:hover {
+      background: var(--accent-green);
+      color: #000;
+      transform: scale(1.05);
+    }
+
+    .spacing-demo {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .spacing-box {
+      background: var(--accent-blue);
+      border-radius: 8px;
+    }
+
+    footer {
+      margin-top: 80px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <section class="hero">
+    <h1>BOLÃO 2026</h1>
+    <p>
+      Design System inspirado na linguagem visual da Copa do Mundo FIFA 2026.
+      Sistema voltado para experiências sociais, rankings, palpites, jogos ao vivo e interação entre usuários.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>Cores</h2>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="color-box" style="background:#0A0A0A;"></div>
+        <strong>Background Primary</strong>
+        <div class="token">#0A0A0A</div>
+      </div>
+
+      <div class="card">
+        <div class="color-box" style="background:#151515;"></div>
+        <strong>Background Secondary</strong>
+        <div class="token">#151515</div>
+      </div>
+
+      <div class="card">
+        <div class="color-box" style="background:#00E676;"></div>
+        <strong>Accent Green</strong>
+        <div class="token">#00E676</div>
+      </div>
+
+      <div class="card">
+        <div class="color-box" style="background:#00B0FF;"></div>
+        <strong>Accent Blue</strong>
+        <div class="token">#00B0FF</div>
+      </div>
+
+      <div class="card">
+        <div class="color-box" style="background:#FF3D57;"></div>
+        <strong>Accent Red</strong>
+        <div class="token">#FF3D57</div>
+      </div>
+
+      <div class="card">
+        <div class="color-box" style="background:#FFC400;"></div>
+        <strong>Gold</strong>
+        <div class="token">#FFC400</div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Tipografia</h2>
+
+    <div class="card">
+
+      <div class="typography-sample">
+        <div class="display">DISPLAY 64</div>
+      </div>
+
+      <div class="typography-sample">
+        <div class="headline">Headline 40</div>
+      </div>
+
+      <div class="typography-sample">
+        <div class="body-large">
+          Body Large — texto importante para rankings e informações.
+        </div>
+      </div>
+
+      <div class="typography-sample">
+        <div class="body">
+          Body — texto padrão da aplicação.
+        </div>
+      </div>
+
+      <div class="typography-sample">
+        <div class="caption">
+          Caption — detalhes secundários e timestamps.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Botões</h2>
+
+    <div class="button-row">
+
+      <button class="btn btn-primary">
+        Salvar Palpite
+      </button>
+
+      <button class="btn btn-secondary">
+        Ver Ranking
+      </button>
+
+      <button class="btn btn-danger">
+        Cancelar
+      </button>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Match Card</h2>
+
+    <div class="match-card">
+
+      <div class="match-header">
+        <div class="match-title">
+          🇧🇷 Brasil vs 🇦🇷 Argentina
+        </div>
+
+        <div class="live-badge">
+          AO VIVO
+        </div>
+      </div>
+
+      <p>Semi-final • 72'</p>
+
+      <div class="score">
+        2 x 1
+      </div>
+
+      <div class="prediction">
+        <strong>Seu palpite:</strong>
+        3 x 1
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Ranking</h2>
+
+    <table class="ranking">
+
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Jogador</th>
+          <th>Pontos</th>
+          <th>Tendência</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        <tr>
+          <td>🥇</td>
+          <td>Vitor</td>
+          <td>142</td>
+          <td>↑</td>
+        </tr>
+
+        <tr>
+          <td>🥈</td>
+          <td>Pedro</td>
+          <td>138</td>
+          <td>→</td>
+        </tr>
+
+        <tr>
+          <td>🥉</td>
+          <td>Daniel</td>
+          <td>131</td>
+          <td>↓</td>
+        </tr>
+
+      </tbody>
+
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>Prediction Chips</h2>
+
+    <div class="chip-row">
+
+      <div class="chip">1 x 0</div>
+      <div class="chip">2 x 1</div>
+      <div class="chip">3 x 2</div>
+      <div class="chip">0 x 0</div>
+      <div class="chip">4 x 1</div>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Spacing System</h2>
+
+    <div class="spacing-demo">
+
+      <div>
+        <div class="spacing-box" style="width:4px;height:40px;"></div>
+        <div class="caption">4</div>
+      </div>
+
+      <div>
+        <div class="spacing-box" style="width:8px;height:40px;"></div>
+        <div class="caption">8</div>
+      </div>
+
+      <div>
+        <div class="spacing-box" style="width:16px;height:40px;"></div>
+        <div class="caption">16</div>
+      </div>
+
+      <div>
+        <div class="spacing-box" style="width:24px;height:40px;"></div>
+        <div class="caption">24</div>
+      </div>
+
+      <div>
+        <div class="spacing-box" style="width:32px;height:40px;"></div>
+        <div class="caption">32</div>
+      </div>
+
+      <div>
+        <div class="spacing-box" style="width:48px;height:40px;"></div>
+        <div class="caption">48</div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    FIFA 2026 inspired visual system — criado para experiências sociais de bolão, fantasy football e ranking competitivo.
+  </footer>
+
+</body>
+</html>
