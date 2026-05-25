@@ -563,7 +563,7 @@ function renderActivePredictionPage(state, participant) {
             ${phase.windowState === 'open' ? 'Salvar palpites' : 'Palpites travados'}
           </button>
           <p class="form-note">
-            Jogos em branco continuam sem envio até o fechamento. No fechamento, os campos ausentes entram como 0x0. Os placares sempre consideram o resultado dos 90 minutos de jogo.
+            Se o participante não preencher um jogo, o sistema considera 0x0 quando a janela fechar. Os placares sempre consideram o resultado dos 90 minutos de jogo.
           </p>
         </div>
       </form>

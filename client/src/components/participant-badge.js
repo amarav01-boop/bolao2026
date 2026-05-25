@@ -24,7 +24,7 @@ export function renderParticipantBadge({
       </span>
       <span class="participant-badge__body">
         <strong>${escapeHtml(displayName)}</strong>
-        ${city ? `<span>${escapeHtml(city)}</span>` : ''}
+        ${city ? `<span class="participant-badge__city">${escapeHtml(city)}</span>` : ''}
         ${showUsername && username ? `<span>@${escapeHtml(username)}</span>` : ''}
         ${avatar ? `<span>${escapeHtml(avatar.label)}</span>` : ''}
       </span>

@@ -28,8 +28,29 @@ export function renderRulesPage(state = {}) {
     <section class="panel panel--span-12">
       ${renderEmptyState({
         title: 'Regras do bolão',
-        body: 'Esta página resume como o bolão funciona, com foco no prazo, na pontuação por fase e no peso dos palpites extras.'
+        body: 'Seja bem-vindo a mais uma edição do tradicional bolão dos amigos da Vila Olímpia! A cada copa do mundo buscamos aprimorar nosso bolão, com mais tecnologia, com mais participantes e com mais diversão! Também estamos sempre aprendendo com os bolões anteriores, e fazemos pequenas alterações nas regras para aumentar a competitividade do bolão. Agora é com você! Prepare seus palpites, estude as seleções e seus craques, e entre nessa divertida competição!'
       })}
+    </section>
+
+    <section class="panel panel--span-12">
+      <div class="panel__header">
+        <p class="panel__label">Importante</p>
+      </div>
+      <p class="panel__text">
+        Importante: leia atentamente ao regulamento desse bolão. Em caso de dúvidas, não hesite em entrar em contato com os administradores do bolão pelo email <strong>vitoramaral@hotmail.com</strong> ou por whatsapp <strong>(11) 99176-3660</strong>.
+      </p>
+    </section>
+
+    <section class="panel panel--span-12">
+      <div class="panel__header">
+        <p class="panel__label">Pagamento da participação</p>
+      </div>
+      <p class="panel__text">
+        O valor para participação do Bolão é de <strong>R$ 100,00 (cem reais)</strong>, e deve ser feito um PIX até <strong>10 de Junho de 2026</strong> na chave abaixo, e o comprovante de pagamento enviado para o email <strong>vitoramaral@hotmail.com</strong> ou por whatsapp <strong>(11) 99176-3660</strong> com o seu nome.
+      </p>
+      <p class="panel__text">
+        <strong>Chave PIX:</strong> <span class="chip">a definir com o administrador</span>
+      </p>
     </section>
 
     <section class="panel panel--span-12">

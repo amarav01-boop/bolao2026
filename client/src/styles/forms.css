@@ -404,6 +404,12 @@
   overflow-wrap: anywhere;
 }
 
+.participant-badge__city {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.66) !important;
+  line-height: 1.15;
+}
+
 .participant-badge--compact {
   gap: 0.75rem;
 }
