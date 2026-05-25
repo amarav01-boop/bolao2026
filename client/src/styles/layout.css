@@ -140,6 +140,21 @@ h1 {
   color: var(--text-secondary);
 }
 
+.rules-payment-card {
+  border-color: rgba(255, 196, 0, 0.28);
+  background:
+    linear-gradient(180deg, rgba(53, 41, 8, 0.92), rgba(24, 18, 6, 0.98)),
+    radial-gradient(circle at top right, rgba(255, 196, 0, 0.12), transparent 28%);
+}
+
+.rules-payment-card .panel__label {
+  color: rgba(255, 226, 153, 0.92);
+}
+
+.rules-payment-card__deadline {
+  color: var(--accent-gold);
+}
+
 .hero {
   grid-column: span 12;
   padding: 1.25rem;

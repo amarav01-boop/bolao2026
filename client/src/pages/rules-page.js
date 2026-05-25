@@ -41,15 +41,16 @@ export function renderRulesPage(state = {}) {
       </p>
     </section>
 
-    <section class="panel panel--span-12">
+    <section class="panel panel--span-12 rules-payment-card">
       <div class="panel__header">
         <p class="panel__label">Pagamento da participação</p>
+        <span class="chip chip--accent">Prazo até 10/06/2026</span>
       </div>
       <p class="panel__text">
-        O valor para participação do Bolão é de <strong>R$ 100,00 (cem reais)</strong>, e deve ser feito um PIX até <strong>10 de Junho de 2026</strong> na chave abaixo, e o comprovante de pagamento enviado para o email <strong>vitoramaral@hotmail.com</strong> ou por whatsapp <strong>(11) 99176-3660</strong> com o seu nome.
+        O valor para participação do Bolão é de <strong>R$ 100,00 (cem reais)</strong>, e deve ser feito um PIX até <strong class="rules-payment-card__deadline">10 de Junho de 2026</strong> na chave abaixo, e o comprovante de pagamento enviado para o email <strong>vitoramaral@hotmail.com</strong> ou por whatsapp <strong>(11) 99176-3660</strong> com o seu nome.
       </p>
       <p class="panel__text">
-        <strong>Chave PIX:</strong> <span class="chip">a definir com o administrador</span>
+        <strong>Chave PIX:</strong> <span class="chip chip--accent">vitoramaral@hotmail.com</span>
       </p>
     </section>
 
