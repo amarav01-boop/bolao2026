@@ -16,6 +16,20 @@ function renderRuleCard(title, items) {
   `;
 }
 
+function renderPrizeScenario(title, body, items) {
+  return `
+    <section class="rules-prize-scenario">
+      <div class="rules-prize-scenario__header">
+        <p class="rules-prize-scenario__title">${title}</p>
+        <p class="rules-prize-scenario__body">${body}</p>
+      </div>
+      <ul class="inline-list">
+        ${items.map((item) => `<li>${item}</li>`).join('')}
+      </ul>
+    </section>
+  `;
+}
+
 export function renderRulesPage(state = {}) {
   const backHref = state.adminSession ? '/admin' : '/';
   const backLabel = state.adminSession
@@ -66,6 +80,42 @@ export function renderRulesPage(state = {}) {
         <li>20% do valor arrecadado será destinado para o <strong>2º colocado</strong> do bolão;</li>
         <li>10% do valor arrecadado será destinado para o <strong>3º colocado</strong> do bolão;</li>
       </ul>
+      <div class="rules-prize-divider"></div>
+      ${renderPrizeScenario(
+        'Cenário A',
+        'Dois participantes terminando o bolão empatados em número de pontos na 1ª posição.',
+        [
+          '90% do valor arrecadado será dividido entre os dois participantes na 1ª posição;',
+          '10% do valor arrecadado será destinado para o 2º colocado;',
+          'Não haverá premiação para o 3º colocado.'
+        ]
+      )}
+      ${renderPrizeScenario(
+        'Cenário B',
+        'Mais de dois participantes terminando o bolão empatados em número de pontos na 1ª posição.',
+        [
+          '100% do valor arrecadado será dividido entre os participantes na 1ª posição;',
+          'Não haverá premiação para o 2º colocado;',
+          'Não haverá premiação para o 3º colocado.'
+        ]
+      )}
+      ${renderPrizeScenario(
+        'Cenário C',
+        'Dois ou mais participantes terminando o bolão empatados em número de pontos na 2ª posição.',
+        [
+          'Caso só exista um participante em 1º lugar ao final do bolão: 30% do valor arrecadado será dividido entre os participantes na 2ª posição; não haverá premiação para o 3º colocado.',
+          'Caso só existam dois participantes em 1º lugar ao final do bolão: 10% do valor arrecadado será dividido entre os participantes na 2ª posição; não haverá premiação para o 3º colocado.',
+          'Em caso de mais de dois participantes em 1º lugar ao final do bolão, não haverá premiação para o 2º e 3º colocados.'
+        ]
+      )}
+      ${renderPrizeScenario(
+        'Cenário D',
+        'Dois ou mais participantes terminando o bolão empatados em número de pontos na 3ª posição.',
+        [
+          'Este cenário só será possível se houver apenas um participante em 1º lugar e um participante em 2º lugar.',
+          '10% do valor arrecadado será dividido entre os participantes na 3ª posição.'
+        ]
+      )}
     </section>
 
     <section class="panel panel--span-12">
