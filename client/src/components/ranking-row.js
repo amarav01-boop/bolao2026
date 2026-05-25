@@ -4,6 +4,7 @@ export function renderRankingRow({
   rank,
   name,
   nickname,
+  city,
   username,
   avatarKey,
   points,
@@ -18,6 +19,7 @@ export function renderRankingRow({
       <td class="ranking-table__participant">
         ${renderParticipantBadge({
           nickname: participantName,
+          city,
           username,
           avatarKey,
           compact: true,

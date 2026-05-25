@@ -9,6 +9,7 @@ function mapParticipantToSession(participant) {
     id: participant.id,
     username: participant.username,
     nickname: participant.nickname,
+    city: participant.city || '',
     avatarKey: participant.avatarKey,
     isAdmin: Boolean(participant.isAdmin)
   };
@@ -61,11 +62,12 @@ async function findParticipantByUsername(username) {
   return participantRepository.findParticipantByUsername(username);
 }
 
-async function createParticipantRegistration({ username, passwordHash, nickname, avatarKey }) {
+async function createParticipantRegistration({ username, passwordHash, nickname, city, avatarKey }) {
   return participantRepository.createParticipant({
     username,
     passwordHash,
     nickname,
+    city,
     avatarKey
   });
 }

@@ -4,6 +4,7 @@ import { getAvatarStyle, getAvatarByKey } from '../data/avatar-options.js';
 export function renderParticipantBadge({
   nickname = '',
   username = '',
+  city = '',
   avatarKey = '',
   showUsername = false,
   compact = false,
@@ -23,6 +24,7 @@ export function renderParticipantBadge({
       </span>
       <span class="participant-badge__body">
         <strong>${escapeHtml(displayName)}</strong>
+        ${city ? `<span>${escapeHtml(city)}</span>` : ''}
         ${showUsername && username ? `<span>@${escapeHtml(username)}</span>` : ''}
         ${avatar ? `<span>${escapeHtml(avatar.label)}</span>` : ''}
       </span>

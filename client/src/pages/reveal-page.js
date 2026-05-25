@@ -194,11 +194,12 @@ export function renderRevealPage(state) {
         <p class="panel__label">Escolha um participante</p>
       </div>
       ${selected
-        ? renderParticipantBadge({
-            nickname: selected.nickname,
-            username: selected.username,
-            avatarKey: selected.avatarKey
-          })
+          ? renderParticipantBadge({
+              nickname: selected.nickname,
+              city: selected.city,
+              username: selected.username,
+              avatarKey: selected.avatarKey
+            })
         : ''}
       <div style="height: 1rem"></div>
       ${renderParticipantSelector(revealState)}

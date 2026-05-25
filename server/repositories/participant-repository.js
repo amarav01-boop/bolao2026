@@ -10,6 +10,7 @@ function mapParticipantRow(row) {
     username: row.username,
     passwordHash: row.password_hash,
     nickname: row.nickname,
+    city: row.city,
     avatarKey: row.avatar_key,
     isAdmin: Boolean(row.is_admin),
     createdAt: row.created_at,
@@ -59,7 +60,7 @@ async function updateRegistrationSettings(isRegistrationOpen) {
 async function findParticipantByUsername(username) {
   const [rows] = await pool.query(
     `
-      SELECT id, username, password_hash, nickname, avatar_key, is_admin, created_at, updated_at
+      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
       FROM participants
       WHERE username = ?
       LIMIT 1
@@ -73,7 +74,7 @@ async function findParticipantByUsername(username) {
 async function findParticipantByNickname(nickname) {
   const [rows] = await pool.query(
     `
-      SELECT id, username, password_hash, nickname, avatar_key, is_admin, created_at, updated_at
+      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
       FROM participants
       WHERE nickname = ?
       LIMIT 1
@@ -87,7 +88,7 @@ async function findParticipantByNickname(nickname) {
 async function listPublicParticipants() {
   const [rows] = await pool.query(
     `
-      SELECT id, username, password_hash, nickname, avatar_key, is_admin, created_at, updated_at
+      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
       FROM participants
       WHERE is_admin = 0
       ORDER BY nickname ASC, id ASC
@@ -97,17 +98,18 @@ async function listPublicParticipants() {
   return rows.map(mapParticipantRow);
 }
 
-async function createParticipant({ username, passwordHash, nickname, avatarKey }) {
+async function createParticipant({ username, passwordHash, nickname, city, avatarKey }) {
   const [result] = await pool.query(
     `
       INSERT INTO participants (
         username,
         password_hash,
         nickname,
+        city,
         avatar_key
-      ) VALUES (?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?)
     `,
-    [username, passwordHash, nickname, avatarKey]
+    [username, passwordHash, nickname, city, avatarKey]
   );
 
   return mapParticipantRow({
@@ -115,6 +117,7 @@ async function createParticipant({ username, passwordHash, nickname, avatarKey }
     username,
     password_hash: passwordHash,
     nickname,
+    city,
     avatar_key: avatarKey,
     is_admin: 0,
     created_at: new Date(),

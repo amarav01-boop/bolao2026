@@ -27,7 +27,7 @@ function buildGroups(matches = []) {
     groups.get(groupCode).matches.push(match);
   });
 
-  return Array.from(groups.values());
+  return Array.from(groups.values()).sort((left, right) => String(left.code).localeCompare(String(right.code), 'pt-BR', { numeric: true, sensitivity: 'base' }));
 }
 
 function mergePredictions(matches, predictions) {

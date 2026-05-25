@@ -121,6 +121,7 @@ const state = {
     username: '',
     password: '',
     nickname: '',
+    city: '',
     avatarKey: getDefaultAvatarKey()
   },
   registrationErrors: {},
@@ -741,6 +742,7 @@ function bindParticipantForms() {
           username: state.registrationForm.username,
           password: state.registrationForm.password,
           nickname: state.registrationForm.nickname,
+          city: state.registrationForm.city,
           avatarKey: state.registrationForm.avatarKey
         });
 
@@ -757,6 +759,7 @@ function bindParticipantForms() {
           username: '',
           password: '',
           nickname: '',
+          city: '',
           avatarKey: getDefaultAvatarKey()
         };
         if (state.route === 'ranking') {

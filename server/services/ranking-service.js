@@ -27,6 +27,7 @@ function calculateDenseRanking(participants = [], predictions = [], bonusPoints 
       id: Number(participant.id),
       username: participant.username,
       nickname: participant.nickname,
+      city: participant.city || '',
       avatarKey: participant.avatarKey,
       points: pointsByParticipantId.get(Number(participant.id)) || 0
     }))

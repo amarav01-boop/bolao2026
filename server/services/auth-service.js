@@ -103,6 +103,7 @@ async function registerParticipant(input) {
       username: input.username,
       passwordHash,
       nickname: input.nickname,
+      city: input.city,
       avatarKey: input.avatarKey
     });
 

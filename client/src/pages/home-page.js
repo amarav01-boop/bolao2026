@@ -54,13 +54,17 @@ function getPredictionDraft(state, matchId) {
 }
 
 function renderPredictionTabs(groups = [], activeGroupCode = 'all') {
-  if (!groups.length) {
+  const sortedGroups = [...groups].sort((left, right) =>
+    String(left.code).localeCompare(String(right.code), 'pt-BR', { numeric: true, sensitivity: 'base' })
+  );
+
+  if (!sortedGroups.length) {
     return '';
   }
 
   return `
     <div class="prediction-tabs" role="tablist" aria-label="Grupos da fase ativa">
-      ${groups
+      ${sortedGroups
         .map(
           (group) => `
             <button
@@ -454,6 +458,7 @@ function renderIdentityCard(participant, summary) {
       </div>
       ${renderParticipantBadge({
         nickname: participant.nickname,
+        city: participant.city,
         username: participant.username,
         avatarKey: participant.avatarKey
       })}
@@ -492,7 +497,9 @@ function renderActivePredictionPage(state, participant) {
   }
 
   const activeGroupCode = state.predictionUi.activeGroupCode;
-  const groups = predictionState.groups || [];
+  const groups = [...(predictionState.groups || [])].sort((left, right) =>
+    String(left.code).localeCompare(String(right.code), 'pt-BR', { numeric: true, sensitivity: 'base' })
+  );
   const activeGroup =
     groups.find((group) => group.code === activeGroupCode) || groups[0] || {
       code: 'all',

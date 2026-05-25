@@ -36,6 +36,7 @@ function renderRankingTable(ranking = [], currentParticipantId) {
                   <td class="ranking-table__participant">
                     ${renderParticipantBadge({
                       nickname: row.nickname,
+                      city: row.city,
                       username: row.username,
                       avatarKey: row.avatarKey,
                       compact: true

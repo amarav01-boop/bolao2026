@@ -117,6 +117,17 @@ function renderRegistrationForm(state) {
             disabled: state.isRegistering
           })}
           ${renderFormField({
+            id: 'city',
+            name: 'city',
+            label: 'Cidade',
+            value: state.registrationForm.city,
+            placeholder: 'Sua cidade',
+            autoComplete: 'address-level2',
+            helpText: 'A cidade também aparece no ranking para mostrar de onde cada participante está jogando.',
+            errors: errors.city || [],
+            disabled: state.isRegistering
+          })}
+          ${renderFormField({
             id: 'password',
             name: 'password',
             label: 'Senha',
