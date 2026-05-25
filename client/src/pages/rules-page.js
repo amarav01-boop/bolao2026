@@ -40,6 +40,15 @@ export function renderRulesPage(state = {}) {
 
   const content = `
     <section class="panel panel--span-12">
+      <div class="panel__header">
+        <p class="panel__label">Acesso rÃ¡pido</p>
+      </div>
+      <div class="panel-actions">
+        <a class="btn btn--primary" href="${backHref}">${backLabel}</a>
+      </div>
+    </section>
+
+    <section class="panel panel--span-12">
       ${renderEmptyState({
         title: 'Regras do bolão',
         body: 'Seja bem-vindo a mais uma edição do tradicional bolão dos amigos da Vila Olímpia! A cada copa do mundo buscamos aprimorar nosso bolão, com mais tecnologia, com mais participantes e com mais diversão! Também estamos sempre aprendendo com os bolões anteriores, e fazemos pequenas alterações nas regras para aumentar a competitividade do bolão. Agora é com você! Prepare seus palpites, estude as seleções e seus craques, e entre nessa divertida competição!'
@@ -116,15 +125,6 @@ export function renderRulesPage(state = {}) {
           '10% do valor arrecadado será dividido entre os participantes na 3ª posição.'
         ]
       )}
-    </section>
-
-    <section class="panel panel--span-12">
-      <div class="panel__header">
-        <p class="panel__label">Acesso rápido</p>
-      </div>
-      <div class="panel-actions">
-        <a class="btn btn--primary" href="${backHref}">${backLabel}</a>
-      </div>
     </section>
 
     ${renderRuleCard('1. Fase de Grupos', [
