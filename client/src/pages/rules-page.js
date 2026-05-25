@@ -54,6 +54,20 @@ export function renderRulesPage(state = {}) {
       </p>
     </section>
 
+    <section class="panel panel--span-12 rules-prize-card">
+      <div class="panel__header">
+        <p class="panel__label">Premiação</p>
+      </div>
+      <p class="panel__text">
+        Todo o valor arrecadado será distribuído, em prêmios, da seguinte forma:
+      </p>
+      <ul class="inline-list">
+        <li>70% do valor arrecadado será destinado para o <strong>1º colocado</strong> do bolão;</li>
+        <li>20% do valor arrecadado será destinado para o <strong>2º colocado</strong> do bolão;</li>
+        <li>10% do valor arrecadado será destinado para o <strong>3º colocado</strong> do bolão;</li>
+      </ul>
+    </section>
+
     <section class="panel panel--span-12">
       <div class="panel__header">
         <p class="panel__label">Acesso rápido</p>
@@ -67,7 +81,8 @@ export function renderRulesPage(state = {}) {
       'Os jogos da fase de grupos são preenchidos por grupo, com salvamento por seção.',
       'O prazo da fase de grupos é até <strong>10 de junho de 2026</strong>.',
       'Se o participante não preencher um jogo, o sistema considera <strong>0x0</strong> quando a janela fechar.',
-      'Os jogos desta fase ficam visíveis no formato de tab por grupo para facilitar o preenchimento.'
+      'Os jogos desta fase ficam visíveis no formato de tab por grupo para facilitar o preenchimento.',
+      'Classificação correta do grupo: <strong>5 pontos</strong> quando a ordem completa do grupo bater com o gabarito final.'
     ])}
 
     ${renderRuleCard('2. Resultado considerado', [
@@ -104,7 +119,6 @@ export function renderRulesPage(state = {}) {
     ])}
 
     ${renderRuleCard('7. Ranking e organização', [
-      'Classificação correta do grupo: <strong>5 pontos</strong> quando a ordem completa do grupo bater com o gabarito final.',
       'O ranking usa pontuação acumulada e desempate denso, sem pular posições.',
       'A home mostra status da fase, ranking rápido e mensagens de atenção quando houver pendências.',
       'A tela de ranking mostra sua posição, seus pontos e a evolução dos demais participantes.'
