@@ -63,20 +63,23 @@ app.use('/api/home', homeRoutes);
 app.use('/api/reveal', revealRoutes);
 app.use('/api/health', healthRoutes);
 
-app.get('/', (req, res) => {
-  res.json({
-    data: {
-      status: 'ok',
-      service: 'bolao2026-api'
-    }
-  });
-});
-
 const clientDist = path.resolve(__dirname, '..', 'client', 'dist');
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
   app.get(/^\/(?!api\/).*/, (req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({
+      data: {
+        status: 'ok',
+        service: 'bolao2026-api'
+      }
+    });
   });
 }
 
