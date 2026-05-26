@@ -149,7 +149,8 @@ const state = {
     semiFinalist4Code: ''
   },
   predictionUi: {
-    activeGroupCode: 'all'
+    activeGroupCode: 'all',
+    knockoutWinners: {}
   },
   predictionSaveState: {
     status: 'idle',
@@ -479,7 +480,8 @@ function resetPredictionWorkspace() {
     semiFinalist4Code: ''
   };
   state.predictionUi = {
-    activeGroupCode: 'all'
+    activeGroupCode: 'all',
+    knockoutWinners: {}
   };
   state.predictionSaveState = {
     status: 'idle',
@@ -816,6 +818,7 @@ function bindParticipantForms() {
   const predictionGroupTabs = app.querySelectorAll('[data-prediction-group-tab]');
   const predictionInputs = app.querySelectorAll('[data-prediction-input]');
   const extraPredictionInputs = app.querySelectorAll('[data-extra-prediction-input]');
+  const knockoutWinnerButtons = app.querySelectorAll('[data-knockout-winner-match]');
 
   if (predictionGroupTabs.length) {
     predictionGroupTabs.forEach((button) => {
@@ -859,6 +862,25 @@ function bindParticipantForms() {
           message: 'Alterações pendentes.'
         };
         schedulePredictionAutosave();
+      });
+    });
+  }
+
+  if (knockoutWinnerButtons.length) {
+    knockoutWinnerButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const matchCode = button.getAttribute('data-knockout-winner-match');
+        const teamCode = button.getAttribute('data-knockout-winner-team');
+
+        if (!matchCode || !teamCode) {
+          return;
+        }
+
+        state.predictionUi.knockoutWinners = {
+          ...(state.predictionUi.knockoutWinners || {}),
+          [matchCode]: teamCode
+        };
+        render();
       });
     });
   }

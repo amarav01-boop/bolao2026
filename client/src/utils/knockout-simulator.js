@@ -40,6 +40,8 @@ const SEMI_FINAL_MATCHES = [
   { code: 'M102', sources: ['M99', 'M100'] }
 ];
 
+const FINAL_MATCHES = [{ code: 'M104', sources: ['M101', 'M102'] }];
+
 function compareTeams(left, right) {
   if (right.points !== left.points) {
     return right.points - left.points;
@@ -183,28 +185,70 @@ function resolveRoundOf32Match(match, groupStandingsByCode, thirdAssignments) {
   return {
     code: match.code,
     home: slots[0],
-    away: slots[1]
+    away: slots[1],
+    winner: null
   };
 }
 
-function createDerivedRound(matches) {
-  return matches.map((match) => ({
-    code: match.code,
-    home: `Vencedor ${match.sources[0]}`,
-    away: `Vencedor ${match.sources[1]}`
-  }));
+function resolveMatchWinner(match, winnerCodes) {
+  const winnerCode = winnerCodes?.[match.code];
+
+  if (!winnerCode) {
+    return null;
+  }
+
+  return [match.home.team, match.away.team].find((team) => team?.code === winnerCode) || null;
 }
 
-export function buildKnockoutSimulation(groupStandingsByCode) {
+function createPreviousWinnerSlot(sourceCode, previousMatchesByCode) {
+  const sourceMatch = previousMatchesByCode.get(sourceCode);
+  const team = sourceMatch?.winner || null;
+
+  return {
+    sourceCode,
+    team,
+    label: team ? createTeamLabel(team, `Vencedor ${sourceCode}`) : `Vencedor ${sourceCode}`
+  };
+}
+
+function createDerivedRound(matches, previousMatchesByCode, winnerCodes) {
+  return matches.map((match) => {
+    const resolvedMatch = {
+      code: match.code,
+      home: createPreviousWinnerSlot(match.sources[0], previousMatchesByCode),
+      away: createPreviousWinnerSlot(match.sources[1], previousMatchesByCode),
+      winner: null
+    };
+
+    resolvedMatch.winner = resolveMatchWinner(resolvedMatch, winnerCodes);
+    return resolvedMatch;
+  });
+}
+
+function createMatchMap(matches) {
+  return new Map(matches.map((match) => [match.code, match]));
+}
+
+export function buildKnockoutSimulation(groupStandingsByCode, winnerCodes = {}) {
   const thirdAssignments = resolveThirdPlaceSlots(groupStandingsByCode);
+  const roundOf32 = ROUND_OF_32_MATCHES.map((match) =>
+    resolveRoundOf32Match(match, groupStandingsByCode, thirdAssignments)
+  );
+  roundOf32.forEach((match) => {
+    match.winner = resolveMatchWinner(match, winnerCodes);
+  });
+
+  const roundOf16 = createDerivedRound(ROUND_OF_16_MATCHES, createMatchMap(roundOf32), winnerCodes);
+  const quarterFinals = createDerivedRound(QUARTER_FINAL_MATCHES, createMatchMap(roundOf16), winnerCodes);
+  const semiFinals = createDerivedRound(SEMI_FINAL_MATCHES, createMatchMap(quarterFinals), winnerCodes);
+  const final = createDerivedRound(FINAL_MATCHES, createMatchMap(semiFinals), winnerCodes);
 
   return {
     bestThirds: thirdAssignments.bestThirds,
-    roundOf32: ROUND_OF_32_MATCHES.map((match) =>
-      resolveRoundOf32Match(match, groupStandingsByCode, thirdAssignments)
-    ),
-    roundOf16: createDerivedRound(ROUND_OF_16_MATCHES),
-    quarterFinals: createDerivedRound(QUARTER_FINAL_MATCHES),
-    semiFinals: createDerivedRound(SEMI_FINAL_MATCHES)
+    roundOf32,
+    roundOf16,
+    quarterFinals,
+    semiFinals,
+    final
   };
 }

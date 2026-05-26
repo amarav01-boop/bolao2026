@@ -287,26 +287,29 @@ function buildPredictedGroupStandingsByCode(state) {
 }
 
 function renderKnockoutMatch(match) {
+  const renderTeamButton = (side) => {
+    const selected = match.winner?.code && side.team?.code === match.winner.code;
+
+    return `
+      <button
+        class="knockout-team${selected ? ' knockout-team--selected' : ''}"
+        type="button"
+        ${side.team ? '' : 'disabled'}
+        data-knockout-winner-match="${escapeHtml(match.code)}"
+        data-knockout-winner-team="${escapeHtml(side.team?.code || '')}"
+      >
+        ${escapeHtml(side.label || 'A definir')}
+      </button>
+    `;
+  };
+
   return `
     <article class="knockout-match">
       <span class="knockout-match__code">${escapeHtml(match.code)}</span>
       <div class="knockout-match__teams">
-        <strong>${escapeHtml(match.home.label || match.home)}</strong>
+        ${renderTeamButton(match.home)}
         <span>X</span>
-        <strong>${escapeHtml(match.away.label || match.away)}</strong>
-      </div>
-    </article>
-  `;
-}
-
-function renderDerivedKnockoutMatch(match) {
-  return `
-    <article class="knockout-match knockout-match--derived">
-      <span class="knockout-match__code">${escapeHtml(match.code)}</span>
-      <div class="knockout-match__teams">
-        <strong>${escapeHtml(match.home)}</strong>
-        <span>X</span>
-        <strong>${escapeHtml(match.away)}</strong>
+        ${renderTeamButton(match.away)}
       </div>
     </article>
   `;
@@ -342,7 +345,7 @@ function renderKnockoutSimulation(state) {
     return '';
   }
 
-  const simulation = buildKnockoutSimulation(standingsByCode);
+  const simulation = buildKnockoutSimulation(standingsByCode, state.predictionUi.knockoutWinners);
 
   return `
     <section class="panel panel--span-12 knockout-simulator">
@@ -352,6 +355,7 @@ function renderKnockoutSimulation(state) {
       </div>
       <p class="panel__text">
         A segunda fase abaixo usa a classificação simulada dos seus palpites. Jogos em branco entram como 0x0 apenas nesta simulação.
+        Alguns confrontos entre dois segundos colocados fazem parte da tabela oficial da Copa.
       </p>
       ${renderBestThirds(simulation.bestThirds)}
       <div class="knockout-round">
@@ -370,7 +374,7 @@ function renderKnockoutSimulation(state) {
             <span class="chip">M89-M96</span>
           </div>
           <div class="knockout-match-grid knockout-match-grid--compact">
-            ${simulation.roundOf16.map(renderDerivedKnockoutMatch).join('')}
+            ${simulation.roundOf16.map(renderKnockoutMatch).join('')}
           </div>
         </section>
         <section class="knockout-round">
@@ -379,8 +383,9 @@ function renderKnockoutSimulation(state) {
             <span class="chip">Caminho</span>
           </div>
           <div class="knockout-match-grid knockout-match-grid--compact">
-            ${simulation.quarterFinals.map(renderDerivedKnockoutMatch).join('')}
-            ${simulation.semiFinals.map(renderDerivedKnockoutMatch).join('')}
+            ${simulation.quarterFinals.map(renderKnockoutMatch).join('')}
+            ${simulation.semiFinals.map(renderKnockoutMatch).join('')}
+            ${simulation.final.map(renderKnockoutMatch).join('')}
           </div>
         </section>
       </div>

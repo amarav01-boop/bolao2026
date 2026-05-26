@@ -380,7 +380,42 @@
   align-items: center;
 }
 
-.knockout-match__teams strong {
+.knockout-team {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 0.65rem;
+  text-align: left;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+  overflow-wrap: anywhere;
+}
+
+.knockout-team:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(0, 230, 118, 0.35);
+  background: rgba(0, 230, 118, 0.1);
+}
+
+.knockout-team--selected {
+  border-color: rgba(0, 230, 118, 0.48);
+  background: rgba(0, 230, 118, 0.16);
+  color: #dfffe9;
+}
+
+.knockout-team:disabled {
+  cursor: default;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.knockout-match__teams strong,
+.knockout-match__teams button {
   min-width: 0;
   overflow-wrap: anywhere;
 }
