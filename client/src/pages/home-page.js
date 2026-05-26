@@ -9,6 +9,7 @@ import {
   calculateGroupStandings,
   hasCompleteScores
 } from '../utils/group-standings.js';
+import { buildKnockoutSimulation } from '../utils/knockout-simulator.js';
 
 const BRAND_LABEL = 'BOLÃO DA COPA 2026 - AMIGOS DA VILA OLÍMPIA';
 
@@ -264,28 +265,126 @@ function renderExtraSectionTitle(title, hint) {
   `;
 }
 
-function renderSemifinalistPreview(draft, teams) {
-  const selectedTeams = [1, 2, 3, 4]
-    .map((index) => teams.find((team) => team.code === draft[`semiFinalist${index}Code`]))
-    .filter(Boolean);
+function buildPredictedGroupStandingsByCode(state) {
+  const standingsByCode = new Map();
 
+  (state.activePrediction?.groups || []).forEach((group) => {
+    const standings = calculateGroupStandings(group.matches || [], (match) => {
+      const draft = getPredictionDraft(state, match.id);
+
+      return {
+        homeScore: String(draft.homeScore ?? '').trim() === '' ? 0 : draft.homeScore,
+        awayScore: String(draft.awayScore ?? '').trim() === '' ? 0 : draft.awayScore
+      };
+    });
+
+    if (group.code && standings.length) {
+      standingsByCode.set(group.code, standings);
+    }
+  });
+
+  return standingsByCode;
+}
+
+function renderKnockoutMatch(match) {
   return `
-    <div class="extra-prediction-preview">
-      <div class="panel__header">
-        <p class="panel__label">Mata-mata simples</p>
-        <span class="chip chip--accent">${selectedTeams.length}/4 definidos</span>
+    <article class="knockout-match">
+      <span class="knockout-match__code">${escapeHtml(match.code)}</span>
+      <div class="knockout-match__teams">
+        <strong>${escapeHtml(match.home.label || match.home)}</strong>
+        <span>X</span>
+        <strong>${escapeHtml(match.away.label || match.away)}</strong>
       </div>
-      <p class="panel__text">
-        Nesta versão simplificada do mata-mata, você escolhe diretamente os 4 semifinalistas que acredita que vão chegar lá.
-      </p>
-      <div class="chip-row extra-prediction-preview__chips">
+    </article>
+  `;
+}
+
+function renderDerivedKnockoutMatch(match) {
+  return `
+    <article class="knockout-match knockout-match--derived">
+      <span class="knockout-match__code">${escapeHtml(match.code)}</span>
+      <div class="knockout-match__teams">
+        <strong>${escapeHtml(match.home)}</strong>
+        <span>X</span>
+        <strong>${escapeHtml(match.away)}</strong>
+      </div>
+    </article>
+  `;
+}
+
+function renderBestThirds(bestThirds = []) {
+  return `
+    <div class="knockout-thirds">
+      <p class="panel__label">8 melhores terceiros pela sua simulação</p>
+      <div class="chip-row">
         ${
-          selectedTeams.length
-            ? selectedTeams.map((team) => `<span class="chip chip--accent">${escapeHtml(team.name)}</span>`).join('')
-            : '<span class="chip">Nenhum semifinalista escolhido ainda</span>'
+          bestThirds.length
+            ? bestThirds
+                .map(
+                  (team, index) => `
+                    <span class="chip ${index < 8 ? 'chip--accent' : ''}">
+                      ${index + 1}. ${escapeHtml(team.name)} (${escapeHtml(team.groupCode)})
+                    </span>
+                  `
+                )
+                .join('')
+            : '<span class="chip">Preencha os grupos para calcular os terceiros.</span>'
         }
       </div>
     </div>
+  `;
+}
+
+function renderKnockoutSimulation(state) {
+  const standingsByCode = buildPredictedGroupStandingsByCode(state);
+
+  if (standingsByCode.size < 12) {
+    return '';
+  }
+
+  const simulation = buildKnockoutSimulation(standingsByCode);
+
+  return `
+    <section class="panel panel--span-12 knockout-simulator">
+      <div class="panel__header">
+        <p class="panel__label">Simulador do mata-mata</p>
+        <span class="chip chip--accent">Baseado nos seus grupos</span>
+      </div>
+      <p class="panel__text">
+        A segunda fase abaixo usa a classificação simulada dos seus palpites. Jogos em branco entram como 0x0 apenas nesta simulação.
+      </p>
+      ${renderBestThirds(simulation.bestThirds)}
+      <div class="knockout-round">
+        <div class="panel__header">
+          <p class="panel__label">Segunda fase</p>
+          <span class="chip">M73-M88</span>
+        </div>
+        <div class="knockout-match-grid">
+          ${simulation.roundOf32.map(renderKnockoutMatch).join('')}
+        </div>
+      </div>
+      <div class="knockout-path-grid">
+        <section class="knockout-round">
+          <div class="panel__header">
+            <p class="panel__label">Oitavas de final</p>
+            <span class="chip">M89-M96</span>
+          </div>
+          <div class="knockout-match-grid knockout-match-grid--compact">
+            ${simulation.roundOf16.map(renderDerivedKnockoutMatch).join('')}
+          </div>
+        </section>
+        <section class="knockout-round">
+          <div class="panel__header">
+            <p class="panel__label">Quartas e semifinais</p>
+            <span class="chip">Caminho</span>
+          </div>
+          <div class="knockout-match-grid knockout-match-grid--compact">
+            ${simulation.quarterFinals.map(renderDerivedKnockoutMatch).join('')}
+            ${simulation.semiFinals.map(renderDerivedKnockoutMatch).join('')}
+          </div>
+        </section>
+      </div>
+    </section>
   `;
 }
 
@@ -362,7 +461,6 @@ function renderExtraPredictions(state, disabled) {
               )
               .join('')}
           </div>
-          ${renderSemifinalistPreview(draft, teams)}
         </section>
 
         <section class="extra-prediction-block">
@@ -583,6 +681,7 @@ function renderActivePredictionPage(state, participant) {
       <div style="height: 0.9rem"></div>
       <form class="auth-form" data-predictions-form novalidate>
         ${renderGroupBlock(state, activeGroup)}
+        ${renderKnockoutSimulation(state)}
         ${renderExtraPredictions(state, phase.windowState !== 'open')}
         <div class="form-actions">
           <button class="btn btn--primary" type="submit" ${phase.windowState !== 'open' ? 'disabled' : ''}>

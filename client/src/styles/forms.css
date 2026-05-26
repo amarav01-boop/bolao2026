@@ -320,7 +320,13 @@
   gap: 0.75rem;
 }
 
-.extra-prediction-preview {
+.knockout-simulator {
+  display: grid;
+  gap: 1rem;
+}
+
+.knockout-thirds,
+.knockout-round {
   display: grid;
   gap: 0.65rem;
   padding: 0.85rem;
@@ -329,8 +335,59 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-.extra-prediction-preview__chips {
-  margin-top: 0.1rem;
+.knockout-match-grid,
+.knockout-path-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.knockout-match-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.knockout-match-grid--compact {
+  grid-template-columns: 1fr;
+}
+
+.knockout-path-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.knockout-match {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.knockout-match--derived {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.knockout-match__code {
+  color: var(--accent-gold);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.knockout-match__teams {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.knockout-match__teams strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.knockout-match__teams span {
+  color: var(--text-muted);
+  font-weight: 900;
 }
 
 .profile-summary {
@@ -473,7 +530,22 @@
     grid-template-columns: 1fr;
   }
 
-  .extra-prediction-preview {
+  .knockout-thirds,
+  .knockout-round {
     padding: 0.75rem;
+  }
+
+  .knockout-match-grid,
+  .knockout-path-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .knockout-match__teams {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .knockout-match__teams span {
+    display: none;
   }
 }
