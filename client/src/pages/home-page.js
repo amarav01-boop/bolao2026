@@ -264,6 +264,31 @@ function renderExtraSectionTitle(title, hint) {
   `;
 }
 
+function renderSemifinalistPreview(draft, teams) {
+  const selectedTeams = [1, 2, 3, 4]
+    .map((index) => teams.find((team) => team.code === draft[`semiFinalist${index}Code`]))
+    .filter(Boolean);
+
+  return `
+    <div class="extra-prediction-preview">
+      <div class="panel__header">
+        <p class="panel__label">Mata-mata simples</p>
+        <span class="chip chip--accent">${selectedTeams.length}/4 definidos</span>
+      </div>
+      <p class="panel__text">
+        Nesta versão simplificada do mata-mata, você escolhe diretamente os 4 semifinalistas que acredita que vão chegar lá.
+      </p>
+      <div class="chip-row extra-prediction-preview__chips">
+        ${
+          selectedTeams.length
+            ? selectedTeams.map((team) => `<span class="chip chip--accent">${escapeHtml(team.name)}</span>`).join('')
+            : '<span class="chip">Nenhum semifinalista escolhido ainda</span>'
+        }
+      </div>
+    </div>
+  `;
+}
+
 function renderExtraPredictions(state, disabled) {
   const phase = state.activePrediction?.phase;
 
@@ -337,6 +362,7 @@ function renderExtraPredictions(state, disabled) {
               )
               .join('')}
           </div>
+          ${renderSemifinalistPreview(draft, teams)}
         </section>
 
         <section class="extra-prediction-block">
