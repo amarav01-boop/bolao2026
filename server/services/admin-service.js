@@ -1,3 +1,6 @@
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
 const authService = require('./auth-service');
 const participantService = require('./participant-service');
 const predictionService = require('./prediction-service');
@@ -37,10 +40,11 @@ function getAdminSession(session) {
 }
 
 async function getOverview() {
-  const [registrationState, phases, matches] = await Promise.all([
+  const [registrationState, phases, matches, participants] = await Promise.all([
     participantService.getRegistrationState(),
     competitionRepository.listCompetitionPhases(),
-    competitionRepository.listCompetitionMatches()
+    competitionRepository.listCompetitionMatches(),
+    participantService.listPublicParticipants()
   ]);
 
   const openPhaseCount = phases.filter((phase) => phase.windowState === 'open').length;
@@ -57,7 +61,8 @@ async function getOverview() {
       revealedPhaseCount
     },
     phases,
-    matches
+    matches,
+    participants
   };
 }
 
@@ -177,6 +182,30 @@ async function recalculateRanking() {
   return predictionService.recalculateRankingPoints();
 }
 
+function generateTemporaryPassword() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = crypto.randomBytes(12);
+  const token = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+  return `B26-${token.slice(0, 4)}-${token.slice(4, 8)}-${token.slice(8, 12)}`;
+}
+
+async function resetParticipantPassword(participantId) {
+  const participant = await participantService.findParticipantById(participantId);
+
+  if (!participant || participant.isAdmin) {
+    throw createServiceError(404, 'PARTICIPANT_NOT_FOUND', 'Participante nÃ£o encontrado.');
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+  const updatedParticipant = await participantService.updateParticipantPasswordHash(participant.id, passwordHash);
+
+  return {
+    participant: participantService.mapParticipantToSession(updatedParticipant),
+    temporaryPassword
+  };
+}
+
 module.exports = {
   createMatch,
   createPhase,
@@ -186,6 +215,7 @@ module.exports = {
   listPhases,
   loginAdmin,
   recalculateRanking,
+  resetParticipantPassword,
   setRegistrationState,
   updateMatch,
   updatePhase

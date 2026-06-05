@@ -20,6 +20,7 @@ import {
   loginAdmin,
   logoutAdmin,
   recalculateAdminRanking,
+  resetAdminParticipantPassword,
   saveRegistrationState,
   updateAdminMatch,
   updateAdminPhase
@@ -111,6 +112,10 @@ const state = {
   isSavingPhase: false,
   isSavingMatch: false,
   isRecalculatingRanking: false,
+  isResettingParticipantPassword: false,
+  resettingParticipantId: null,
+  adminPasswordResetResult: null,
+  adminPasswordResetError: null,
   loginForm: {
     username: '',
     password: ''
@@ -913,6 +918,7 @@ function bindAdminForms() {
   const matchFilterPhase = app.querySelector('#match-filter-phase');
   const matchFilterGroup = app.querySelector('#match-filter-group');
   const recalculateRankingButton = app.querySelector('[data-admin-recalculate-ranking]');
+  const resetPasswordButtons = app.querySelectorAll('[data-admin-reset-password]');
 
   if (loginForm) {
     const fields = loginForm.querySelectorAll('input[data-admin-input]');
@@ -1174,6 +1180,36 @@ function bindAdminForms() {
         state.isRecalculatingRanking = false;
         render();
       }
+    });
+  }
+
+  if (resetPasswordButtons.length) {
+    resetPasswordButtons.forEach((button) => {
+      button.addEventListener('click', async () => {
+        const participantId = Number(button.getAttribute('data-admin-reset-password'));
+
+        if (!participantId) {
+          return;
+        }
+
+        state.isResettingParticipantPassword = true;
+        state.resettingParticipantId = participantId;
+        state.adminPasswordResetError = null;
+        state.adminPasswordResetResult = null;
+        render();
+
+        try {
+          const response = await resetAdminParticipantPassword(participantId);
+          state.adminPasswordResetResult = response.data;
+          notify('Senha temporÃ¡ria gerada.');
+        } catch (error) {
+          state.adminPasswordResetError = error.message;
+        } finally {
+          state.isResettingParticipantPassword = false;
+          state.resettingParticipantId = null;
+          render();
+        }
+      });
     });
   }
 

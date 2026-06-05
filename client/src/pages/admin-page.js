@@ -630,6 +630,88 @@ function renderMatchesTable(matches = []) {
   `;
 }
 
+function renderParticipantPasswordReset(state) {
+  const participants = state.adminOverview?.participants || [];
+  const resetResult = state.adminPasswordResetResult;
+
+  return `
+    <section class="panel panel--span-12">
+      <div class="section-title">
+        <h2>Acesso dos participantes</h2>
+        <p>Gere uma nova senha temporÃ¡ria quando alguÃ©m esquecer o acesso.</p>
+      </div>
+      ${state.adminPasswordResetError
+        ? renderStatusMessage({
+            tone: 'danger',
+            title: 'Falha ao gerar senha',
+            body: state.adminPasswordResetError
+          })
+        : ''}
+      ${resetResult
+        ? `
+          <div class="admin-password-result">
+            <div>
+              <p class="panel__label">Senha temporÃ¡ria gerada</p>
+              <h3>${escapeHtml(resetResult.participant?.nickname || resetResult.participant?.username || 'Participante')}</h3>
+              <p class="panel__text">${escapeHtml(resetResult.participant?.username || '')}</p>
+            </div>
+            <code>${escapeHtml(resetResult.temporaryPassword)}</code>
+          </div>
+        `
+        : renderStatusMessage({
+            tone: 'neutral',
+            title: 'SeguranÃ§a',
+            body: 'A senha atual nÃ£o pode ser visualizada porque fica protegida por hash. O admin pode gerar uma nova senha e enviÃ¡-la ao participante.'
+          })}
+      <div style="height: 1rem"></div>
+      ${participants.length
+        ? `
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th>Participante</th>
+                <th>E-mail</th>
+                <th>Cidade</th>
+                <th>AÃ§Ã£o</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${participants
+                .map(
+                  (participant) => `
+                    <tr>
+                      <td>${escapeHtml(participant.nickname)}</td>
+                      <td>${escapeHtml(participant.username)}</td>
+                      <td>${participant.city ? escapeHtml(participant.city) : '-'}</td>
+                      <td>
+                        <button
+                          class="btn btn--secondary btn--inline"
+                          type="button"
+                          data-admin-reset-password="${escapeHtml(participant.id)}"
+                          ${state.isResettingParticipantPassword ? 'disabled' : ''}
+                        >
+                          ${
+                            state.resettingParticipantId === participant.id
+                              ? 'Gerando...'
+                              : 'Gerar senha'
+                          }
+                        </button>
+                      </td>
+                    </tr>
+                  `
+                )
+                .join('')}
+            </tbody>
+          </table>
+        `
+        : renderEmptyState({
+            title: 'Nenhum participante cadastrado',
+            body: 'Quando os participantes se registrarem, eles aparecerÃ£o aqui para suporte de acesso.'
+          })}
+    </section>
+  `;
+}
+
 export function renderAdminLoginPage(state) {
   const content = `
     <section class="panel panel--span-12">
@@ -758,6 +840,8 @@ export function renderAdminDashboardPage(state) {
       <div style="height: 1rem"></div>
       ${renderPhasesTable(overview.phases)}
     </section>
+
+    ${renderParticipantPasswordReset(state)}
 
     <section class="panel panel--span-12" id="admin-gabarito">
       <div class="section-title">

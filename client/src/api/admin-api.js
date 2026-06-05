@@ -69,3 +69,9 @@ export function recalculateAdminRanking() {
     method: 'POST'
   });
 }
+
+export function resetAdminParticipantPassword(participantId) {
+  return fetchJson(`/api/admin/participants/${participantId}/password-reset`, {
+    method: 'POST'
+  });
+}

@@ -155,6 +155,15 @@ router.post(
 );
 
 router.post(
+  '/participants/:participantId/password-reset',
+  requireAdmin,
+  asyncRoute(async (req, res) => {
+    const result = await adminService.resetParticipantPassword(req.params.participantId);
+    return res.json(successResponse(result));
+  })
+);
+
+router.post(
   '/matches',
   requireAdmin,
   validate(matchBaseSchema),

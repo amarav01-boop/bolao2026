@@ -62,6 +62,10 @@ async function findParticipantByUsername(username) {
   return participantRepository.findParticipantByUsername(username);
 }
 
+async function findParticipantById(participantId) {
+  return participantRepository.findParticipantById(participantId);
+}
+
 async function createParticipantRegistration({ username, passwordHash, nickname, city, avatarKey }) {
   return participantRepository.createParticipant({
     username,
@@ -77,6 +81,10 @@ async function listPublicParticipants() {
   return participants.map(mapParticipantToSession);
 }
 
+async function updateParticipantPasswordHash(participantId, passwordHash) {
+  return participantRepository.updateParticipantPasswordHash(participantId, passwordHash);
+}
+
 function getSessionParticipant(session) {
   if (!session || !session.user || session.user.isAdmin) {
     return null;
@@ -88,10 +96,12 @@ function getSessionParticipant(session) {
 module.exports = {
   createParticipantRegistration,
   findDuplicateIdentity,
+  findParticipantById,
   findParticipantByUsername,
   getRegistrationState,
   getSessionParticipant,
   listPublicParticipants,
   mapParticipantToSession,
-  setRegistrationState
+  setRegistrationState,
+  updateParticipantPasswordHash
 };

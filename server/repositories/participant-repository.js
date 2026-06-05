@@ -85,6 +85,20 @@ async function findParticipantByNickname(nickname) {
   return mapParticipantRow(rows[0]);
 }
 
+async function findParticipantById(participantId) {
+  const [rows] = await pool.query(
+    `
+      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
+      FROM participants
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [participantId]
+  );
+
+  return mapParticipantRow(rows[0]);
+}
+
 async function listPublicParticipants() {
   const [rows] = await pool.query(
     `
@@ -96,6 +110,19 @@ async function listPublicParticipants() {
   );
 
   return rows.map(mapParticipantRow);
+}
+
+async function updateParticipantPasswordHash(participantId, passwordHash) {
+  await pool.query(
+    `
+      UPDATE participants
+      SET password_hash = ?
+      WHERE id = ? AND is_admin = 0
+    `,
+    [passwordHash, participantId]
+  );
+
+  return findParticipantById(participantId);
 }
 
 async function createParticipant({ username, passwordHash, nickname, city, avatarKey }) {
@@ -127,10 +154,12 @@ async function createParticipant({ username, passwordHash, nickname, city, avata
 
 module.exports = {
   createParticipant,
+  findParticipantById,
   findParticipantByNickname,
   findParticipantByUsername,
   getRegistrationSettings,
   listPublicParticipants,
+  updateParticipantPasswordHash,
   updateRegistrationSettings,
   mapParticipantRow,
   mapRegistrationSettingsRow
