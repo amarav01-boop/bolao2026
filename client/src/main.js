@@ -41,6 +41,7 @@ import { escapeHtml } from './utils/escape-html.js';
 
 const app = document.querySelector('#app');
 const toastRoot = document.querySelector('#toast-root');
+const DEFAULT_ADMIN_USERNAME = 'admin@bolao.local';
 
 function getInitialRoute() {
   if (window.location.pathname.startsWith('/regras')) {
@@ -132,7 +133,7 @@ const state = {
   registrationErrors: {},
   registrationFormError: null,
   adminLoginForm: {
-    username: 'admin@bolao.local',
+    username: DEFAULT_ADMIN_USERNAME,
     password: ''
   },
   adminLoginFormError: null,
@@ -936,7 +937,7 @@ function bindAdminForms() {
 
       try {
         const response = await loginAdmin({
-          username: state.adminLoginForm.username,
+          username: state.adminLoginForm.username || DEFAULT_ADMIN_USERNAME,
           password: state.adminLoginForm.password
         });
 
@@ -945,7 +946,7 @@ function bindAdminForms() {
         state.sessionParticipant = null;
         state.sessionHydrated = true;
         state.isAdminLoggingIn = false;
-        state.adminLoginForm = { username: '', password: '' };
+        state.adminLoginForm = { username: DEFAULT_ADMIN_USERNAME, password: '' };
         setRoute('admin');
         render();
 
@@ -978,6 +979,7 @@ function bindAdminForms() {
         resetPhaseForm();
         resetMatchForm();
         state.adminLoginFormError = null;
+        state.adminLoginForm = { username: DEFAULT_ADMIN_USERNAME, password: '' };
         render();
       }
     });
