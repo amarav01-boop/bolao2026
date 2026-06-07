@@ -13,6 +13,7 @@
     "start:server": "npm run start --workspace server",
     "migrate:server": "npm run migrate --workspace server",
     "seed:server": "npm run seed --workspace server",
+    "simulate:home-insights": "node ./server/db/simulate-home-insights.js",
     "export:competition-data": "node ./server/db/export-competition-tables.js",
     "start": "npm run start:server"
   }
