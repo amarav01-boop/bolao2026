@@ -6,16 +6,50 @@ const COMPLETED_RESULTS = [
   { home: 1, away: 1, kickoffAt: '2026-06-05 19:00:00' },
   { home: 0, away: 1, kickoffAt: '2026-06-06 14:00:00' },
   { home: 3, away: 1, kickoffAt: '2026-06-06 18:00:00' },
-  { home: 1, away: 2, kickoffAt: '2026-06-06 22:00:00' }
+  { home: 1, away: 2, kickoffAt: '2026-06-06 22:00:00' },
+  { home: 2, away: 1, kickoffAt: '2026-06-07 09:00:00' },
+  { home: 0, away: 0, kickoffAt: '2026-06-07 10:30:00' },
+  { home: 1, away: 3, kickoffAt: '2026-06-07 12:00:00' },
+  { home: 2, away: 2, kickoffAt: '2026-06-07 13:30:00' },
+  { home: 0, away: 2, kickoffAt: '2026-06-07 14:30:00' }
 ];
 
 const TODAY_KICKOFFS = [
-  '2026-06-07 15:00:00',
-  '2026-06-07 19:00:00',
+  '2026-06-07 17:00:00',
+  '2026-06-07 20:00:00',
   '2026-06-07 23:00:00'
 ];
 
+const EXACT_HIT_PARTICIPANTS_BY_NEW_MATCH = [
+  [8, 7],
+  [5, 2],
+  [0, 8],
+  [7, 5],
+  [2, 0]
+];
+
 function buildCompletedPrediction(result, participantIndex, matchIndex) {
+  if (matchIndex >= 5) {
+    const exactParticipants = EXACT_HIT_PARTICIPANTS_BY_NEW_MATCH[matchIndex - 5] || [];
+
+    if (exactParticipants.includes(participantIndex)) {
+      return { home: result.home, away: result.away };
+    }
+
+    const actualOutcome = Math.sign(result.home - result.away);
+    const favorsChasingParticipant = participantIndex >= 4 && (participantIndex + matchIndex) % 2 === 0;
+
+    if (favorsChasingParticipant) {
+      if (actualOutcome === 0) {
+        return { home: result.home + 1, away: result.away + 1 };
+      }
+
+      return actualOutcome > 0 ? { home: 1, away: 0 } : { home: 0, away: 1 };
+    }
+
+    return actualOutcome >= 0 ? { home: 0, away: 1 } : { home: 1, away: 0 };
+  }
+
   const pattern = (participantIndex + matchIndex) % 5;
 
   if (pattern === 0 || (participantIndex === 3 && matchIndex < 3)) {
@@ -44,13 +78,35 @@ function buildCompletedPrediction(result, participantIndex, matchIndex) {
 }
 
 function buildTodayPrediction(participantIndex, matchIndex) {
-  const pattern = (participantIndex + matchIndex) % 3;
+  if (matchIndex === 0) {
+    if (participantIndex < 6) {
+      return { home: 2, away: 0 };
+    }
 
-  if (pattern === 0) {
+    if (participantIndex < 8) {
+      return { home: 1, away: 1 };
+    }
+
+    return { home: 0, away: 1 };
+  }
+
+  if (matchIndex === 1) {
+    if (participantIndex < 2) {
+      return { home: 2, away: 0 };
+    }
+
+    if (participantIndex < 7) {
+      return { home: 1, away: 1 };
+    }
+
+    return { home: 0, away: 1 };
+  }
+
+  if (participantIndex === 0) {
     return { home: 2, away: 0 };
   }
 
-  if (pattern === 1) {
+  if (participantIndex < 3) {
     return { home: 1, away: 1 };
   }
 
@@ -86,7 +142,7 @@ async function loadSimulationTargets(connection) {
       FROM competition_match_master
       WHERE phase_id = ?
       ORDER BY kickoff_at ASC, id ASC
-      LIMIT 8
+      LIMIT 13
     `,
     [phaseId]
   );
@@ -95,8 +151,8 @@ async function loadSimulationTargets(connection) {
     throw new Error('Nenhum participante cadastrado foi encontrado.');
   }
 
-  if (matches.length < 8) {
-    throw new Error('São necessários pelo menos oito jogos na fase de grupos.');
+  if (matches.length < 13) {
+    throw new Error('São necessários pelo menos treze jogos na fase de grupos.');
   }
 
   return { phaseId, participants, matches };

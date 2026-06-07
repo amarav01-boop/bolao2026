@@ -89,6 +89,7 @@ function isDailyDistributionMatch(match, todayKey) {
   return (
     match.phaseRevealEnabled &&
     match.phaseWindowState !== 'open' &&
+    !match.isPlayed &&
     getBrazilDateKey(match.kickoffAt) === todayKey
   );
 }

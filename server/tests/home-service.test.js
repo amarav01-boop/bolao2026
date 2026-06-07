@@ -38,7 +38,8 @@ test('buildDailyPredictionDistribution counts regular and defaulted predictions'
         awayTeamName: 'Canadá',
         kickoffAt: new Date('2026-06-11T19:00:00-03:00'),
         phaseWindowState: 'locked',
-        phaseRevealEnabled: true
+        phaseRevealEnabled: true,
+        isPlayed: false
       }
     ],
     predictionsByMatch: new Map([
@@ -68,10 +69,30 @@ test('buildDailyPredictionDistribution hides matches whose predictions are not r
         id: 10,
         kickoffAt: new Date('2026-06-11T19:00:00-03:00'),
         phaseWindowState: 'locked',
-        phaseRevealEnabled: false
+        phaseRevealEnabled: false,
+        isPlayed: false
       }
     ],
     predictionsByMatch: new Map([[10, [{ predictedHomeScore: 1, predictedAwayScore: 0 }]]])
+  });
+
+  assert.equal(distribution.available, false);
+  assert.deepEqual(distribution.matches, []);
+});
+
+test('buildDailyPredictionDistribution excludes matches already played today', () => {
+  const distribution = buildDailyPredictionDistribution({
+    now: new Date('2026-06-11T20:00:00-03:00'),
+    matches: [
+      {
+        id: 10,
+        kickoffAt: new Date('2026-06-11T15:00:00-03:00'),
+        phaseWindowState: 'locked',
+        phaseRevealEnabled: true,
+        isPlayed: true
+      }
+    ],
+    predictionsByMatch: new Map([[10, [{ predictedHomeScore: 2, predictedAwayScore: 0 }]]])
   });
 
   assert.equal(distribution.available, false);
