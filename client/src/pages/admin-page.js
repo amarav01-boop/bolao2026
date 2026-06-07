@@ -615,7 +615,7 @@ function renderMatchesTable(matches = []) {
                 <td>${escapeHtml(formatKickoffDate(match.kickoffAt).slice(11, 16))}</td>
                 <td>${match.resultHomeScore !== null && match.resultHomeScore !== undefined && match.resultAwayScore !== null && match.resultAwayScore !== undefined ? `${escapeHtml(String(match.resultHomeScore))} x ${escapeHtml(String(match.resultAwayScore))}` : '-'}</td>
                 <td>${match.isPlayed ? 'Sim' : 'Não'}</td>
-                <td>${escapeHtml(match.status)}</td>
+                <td>${escapeHtml(match.isPlayed ? 'completed' : match.status || 'scheduled')}</td>
                 <td>
                   <button class="btn btn--secondary btn--inline" type="button" data-admin-edit-match="${match.id}">
                     Editar

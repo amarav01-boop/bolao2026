@@ -211,7 +211,7 @@ async function applySimulation() {
           UPDATE competition_match_master
           SET kickoff_at = ?,
               is_played = 1,
-              status = 'played',
+              status = 'completed',
               result_home_score = ?,
               result_away_score = ?
           WHERE id = ?
