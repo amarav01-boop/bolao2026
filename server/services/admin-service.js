@@ -6,6 +6,69 @@ const participantService = require('./participant-service');
 const predictionService = require('./prediction-service');
 const competitionRepository = require('../repositories/competition-repository');
 
+const TEMPORARY_PASSWORD_CITIES = [
+  'Amsterdam',
+  'Atenas',
+  'Bangkok',
+  'Barcelona',
+  'Beijing',
+  'Berlim',
+  'Bogota',
+  'Boston',
+  'Brasilia',
+  'Bruxelas',
+  'Budapeste',
+  'BuenosAires',
+  'Cairo',
+  'Chicago',
+  'Copenhague',
+  'Dublin',
+  'Dubai',
+  'Edimburgo',
+  'Florenca',
+  'Genebra',
+  'Havana',
+  'Helsinque',
+  'HongKong',
+  'Istambul',
+  'Jerusalem',
+  'Johannesburgo',
+  'Lisboa',
+  'Londres',
+  'LosAngeles',
+  'Madri',
+  'Melbourne',
+  'Mexico',
+  'Miami',
+  'Milao',
+  'Montreal',
+  'Moscou',
+  'Mumbai',
+  'Munich',
+  'Nairobi',
+  'Napoles',
+  'NovaYork',
+  'Osaka',
+  'Oslo',
+  'Paris',
+  'Pequim',
+  'Praga',
+  'Quebec',
+  'Recife',
+  'Roma',
+  'Salvador',
+  'Santiago',
+  'Seul',
+  'Singapura',
+  'Sydney',
+  'Tokyo',
+  'Toronto',
+  'Vancouver',
+  'Veneza',
+  'Viena',
+  'Zurique'
+];
+
 function createServiceError(status, code, message, details) {
   const error = new Error(message);
   error.status = status;
@@ -183,10 +246,9 @@ async function recalculateRanking() {
 }
 
 function generateTemporaryPassword() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-  const bytes = crypto.randomBytes(12);
-  const token = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
-  return `B26-${token.slice(0, 4)}-${token.slice(4, 8)}-${token.slice(8, 12)}`;
+  const city = TEMPORARY_PASSWORD_CITIES[crypto.randomInt(TEMPORARY_PASSWORD_CITIES.length)];
+  const number = crypto.randomInt(100, 1000);
+  return `${city}${number}`;
 }
 
 async function resetParticipantPassword(participantId) {
@@ -218,5 +280,6 @@ module.exports = {
   resetParticipantPassword,
   setRegistrationState,
   updateMatch,
-  updatePhase
+  updatePhase,
+  generateTemporaryPassword
 };
