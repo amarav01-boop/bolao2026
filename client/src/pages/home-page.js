@@ -601,6 +601,141 @@ function renderIdentityCard(participant, summary) {
   `;
 }
 
+function formatMatchTime(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function renderDailyPredictionDistribution(homeState) {
+  const distribution = homeState?.dailyPredictionDistribution;
+
+  return `
+    <section class="panel home-insight-card">
+      <div class="panel__header">
+        <div>
+          <p class="panel__label">Palpites de hoje</p>
+          <h2 class="home-insight-card__title">Como a turma está apostando</h2>
+        </div>
+        <span class="chip">90 minutos</span>
+      </div>
+      ${
+        distribution?.available && distribution.matches?.length
+          ? `
+            <div class="daily-distribution-list">
+              ${distribution.matches
+                .map(
+                  (match) => `
+                    <article class="daily-distribution-match">
+                      <div class="daily-distribution-match__header">
+                        <strong>${escapeHtml(match.homeTeamName)} x ${escapeHtml(match.awayTeamName)}</strong>
+                        <span>${escapeHtml(formatMatchTime(match.kickoffAt))}</span>
+                      </div>
+                      <div class="daily-distribution-grid">
+                        <div class="daily-distribution-option daily-distribution-option--home">
+                          <span class="daily-distribution-option__label">${escapeHtml(match.homeTeamName)}</span>
+                          <strong>${escapeHtml(match.percentages.homeWin)}%</strong>
+                          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.homeWin}%"></span>
+                        </div>
+                        <div class="daily-distribution-option daily-distribution-option--draw">
+                          <span class="daily-distribution-option__label">Empate</span>
+                          <strong>${escapeHtml(match.percentages.draw)}%</strong>
+                          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.draw}%"></span>
+                        </div>
+                        <div class="daily-distribution-option daily-distribution-option--away">
+                          <span class="daily-distribution-option__label">${escapeHtml(match.awayTeamName)}</span>
+                          <strong>${escapeHtml(match.percentages.awayWin)}%</strong>
+                          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.awayWin}%"></span>
+                        </div>
+                      </div>
+                      <p class="daily-distribution-match__total">${escapeHtml(match.counts.total)} palpites contabilizados</p>
+                    </article>
+                  `
+                )
+                .join('')}
+            </div>
+          `
+          : `
+            <div class="home-insight-empty">
+              <strong>Distribuição indisponível</strong>
+              <span>Ela aparece quando houver jogos no dia e os palpites estiverem travados e revelados.</span>
+            </div>
+          `
+      }
+    </section>
+  `;
+}
+
+function renderExactHitHighlights(homeState) {
+  const highlights = homeState?.exactHitHighlights || [];
+
+  return `
+    <section class="panel home-insight-card home-insight-card--exact">
+      <div class="panel__header">
+        <div>
+          <p class="panel__label">Acertou na Mosca</p>
+          <h2 class="home-insight-card__title">Placares cravados</h2>
+        </div>
+        <span class="chip chip--accent">Na mosca</span>
+      </div>
+      ${
+        highlights.length
+          ? `
+            <div class="exact-hit-list">
+              ${highlights
+                .map(
+                  (match) => `
+                    <article class="exact-hit-match">
+                      <div class="exact-hit-match__score">
+                        <span>${escapeHtml(match.homeTeamName)}</span>
+                        <strong>${escapeHtml(match.score.home)} x ${escapeHtml(match.score.away)}</strong>
+                        <span>${escapeHtml(match.awayTeamName)}</span>
+                      </div>
+                      <div class="exact-hit-participants" aria-label="Participantes que acertaram o placar">
+                        ${match.participants
+                          .map(
+                            (participant) => `
+                              <span class="exact-hit-participant">
+                                <strong>${escapeHtml(participant.nickname)}</strong>
+                                ${participant.city ? `<small>${escapeHtml(participant.city)}</small>` : ''}
+                              </span>
+                            `
+                          )
+                          .join('')}
+                      </div>
+                    </article>
+                  `
+                )
+                .join('')}
+            </div>
+          `
+          : `
+            <div class="home-insight-empty">
+              <strong>A primeira mosca ainda está voando</strong>
+              <span>Os acertos exatos dos jogos recentes aparecerão aqui.</span>
+            </div>
+          `
+      }
+    </section>
+  `;
+}
+
+function renderHomeInsights(homeState) {
+  return `
+    <div class="home-insights-grid">
+      ${renderDailyPredictionDistribution(homeState)}
+      ${renderExactHitHighlights(homeState)}
+    </div>
+  `;
+}
+
 function renderActivePredictionPage(state, participant) {
   const predictionState = state.activePrediction;
   const phase = predictionState?.phase;
@@ -616,6 +751,7 @@ function renderActivePredictionPage(state, participant) {
           body: state.predictionLoadError || 'Assim que o admin abrir uma fase, seus palpites vão aparecer aqui.'
         })}
       </section>
+      ${renderHomeInsights(homeState)}
       <section class="panel panel--span-12">
         ${renderEmptyState({
           title: 'Palpites aguardando fase aberta',
@@ -670,6 +806,8 @@ function renderActivePredictionPage(state, participant) {
         </div>
       </div>
     </section>
+
+    ${renderHomeInsights(homeState)}
 
     <section class="panel panel--span-12">
       <div class="panel__header">
