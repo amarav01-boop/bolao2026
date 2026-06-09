@@ -40,6 +40,7 @@ const SEMI_FINAL_MATCHES = [
   { code: 'M102', sources: ['M99', 'M100'] }
 ];
 
+const THIRD_PLACE_MATCH = { code: 'M103', sources: ['M101', 'M102'] };
 const FINAL_MATCHES = [{ code: 'M104', sources: ['M101', 'M102'] }];
 
 function compareTeams(left, right) {
@@ -211,6 +212,20 @@ function createPreviousWinnerSlot(sourceCode, previousMatchesByCode) {
   };
 }
 
+function createPreviousLoserSlot(sourceCode, previousMatchesByCode) {
+  const sourceMatch = previousMatchesByCode.get(sourceCode);
+  const teams = [sourceMatch?.home?.team, sourceMatch?.away?.team].filter(Boolean);
+  const team = sourceMatch?.winner
+    ? teams.find((candidate) => candidate.code !== sourceMatch.winner.code) || null
+    : null;
+
+  return {
+    sourceCode,
+    team,
+    label: team ? createTeamLabel(team, `Perdedor ${sourceCode}`) : `Perdedor ${sourceCode}`
+  };
+}
+
 function createDerivedRound(matches, previousMatchesByCode, winnerCodes) {
   return matches.map((match) => {
     const resolvedMatch = {
@@ -223,6 +238,19 @@ function createDerivedRound(matches, previousMatchesByCode, winnerCodes) {
     resolvedMatch.winner = resolveMatchWinner(resolvedMatch, winnerCodes);
     return resolvedMatch;
   });
+}
+
+function createThirdPlaceMatch(previousMatchesByCode, winnerCodes) {
+  const resolvedMatch = {
+    code: THIRD_PLACE_MATCH.code,
+    label: 'Disputa do 3º lugar',
+    home: createPreviousLoserSlot(THIRD_PLACE_MATCH.sources[0], previousMatchesByCode),
+    away: createPreviousLoserSlot(THIRD_PLACE_MATCH.sources[1], previousMatchesByCode),
+    winner: null
+  };
+
+  resolvedMatch.winner = resolveMatchWinner(resolvedMatch, winnerCodes);
+  return resolvedMatch;
 }
 
 function createMatchMap(matches) {
@@ -241,7 +269,12 @@ export function buildKnockoutSimulation(groupStandingsByCode, winnerCodes = {}) 
   const roundOf16 = createDerivedRound(ROUND_OF_16_MATCHES, createMatchMap(roundOf32), winnerCodes);
   const quarterFinals = createDerivedRound(QUARTER_FINAL_MATCHES, createMatchMap(roundOf16), winnerCodes);
   const semiFinals = createDerivedRound(SEMI_FINAL_MATCHES, createMatchMap(quarterFinals), winnerCodes);
-  const final = createDerivedRound(FINAL_MATCHES, createMatchMap(semiFinals), winnerCodes);
+  const semiFinalsByCode = createMatchMap(semiFinals);
+  const final = createDerivedRound(FINAL_MATCHES, semiFinalsByCode, winnerCodes).map((match) => ({
+    ...match,
+    label: 'Final'
+  }));
+  const finals = [createThirdPlaceMatch(semiFinalsByCode, winnerCodes), ...final];
 
   return {
     bestThirds: thirdAssignments.bestThirds,
@@ -249,6 +282,6 @@ export function buildKnockoutSimulation(groupStandingsByCode, winnerCodes = {}) 
     roundOf16,
     quarterFinals,
     semiFinals,
-    final
+    final: finals
   };
 }

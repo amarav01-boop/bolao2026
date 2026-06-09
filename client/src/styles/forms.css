@@ -386,6 +386,22 @@
   font-size: 0.72rem;
 }
 
+.knockout-match__heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.knockout-match__label {
+  font-size: 0.68rem;
+}
+
+.knockout-round--finals {
+  border-color: rgba(255, 196, 0, 0.3);
+  background: rgba(37, 29, 4, 0.4);
+}
+
 .knockout-match__teams {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
