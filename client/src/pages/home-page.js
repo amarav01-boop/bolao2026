@@ -305,7 +305,10 @@ function renderKnockoutMatch(match) {
 
   return `
     <article class="knockout-match">
-      <span class="knockout-match__code">${escapeHtml(match.code)}</span>
+      <div class="knockout-match__heading">
+        <span class="knockout-match__code">${escapeHtml(match.code)}</span>
+        ${match.label ? `<span class="chip knockout-match__label">${escapeHtml(match.label)}</span>` : ''}
+      </div>
       <div class="knockout-match__teams">
         ${renderTeamButton(match.home)}
         <span>X</span>
@@ -339,6 +342,10 @@ function renderBestThirds(bestThirds = []) {
 }
 
 function renderKnockoutSimulation(state) {
+  if (!state.activePrediction?.canEdit) {
+    return '';
+  }
+
   const standingsByCode = buildPredictedGroupStandingsByCode(state);
 
   if (standingsByCode.size < 12) {
@@ -367,28 +374,42 @@ function renderKnockoutSimulation(state) {
           ${simulation.roundOf32.map(renderKnockoutMatch).join('')}
         </div>
       </div>
-      <div class="knockout-path-grid">
-        <section class="knockout-round">
-          <div class="panel__header">
-            <p class="panel__label">Oitavas de final</p>
-            <span class="chip">M89-M96</span>
-          </div>
-          <div class="knockout-match-grid knockout-match-grid--compact">
-            ${simulation.roundOf16.map(renderKnockoutMatch).join('')}
-          </div>
-        </section>
-        <section class="knockout-round">
-          <div class="panel__header">
-            <p class="panel__label">Quartas e semifinais</p>
-            <span class="chip">Caminho</span>
-          </div>
-          <div class="knockout-match-grid knockout-match-grid--compact">
-            ${simulation.quarterFinals.map(renderKnockoutMatch).join('')}
-            ${simulation.semiFinals.map(renderKnockoutMatch).join('')}
-            ${simulation.final.map(renderKnockoutMatch).join('')}
-          </div>
-        </section>
-      </div>
+      <section class="knockout-round">
+        <div class="panel__header">
+          <p class="panel__label">Oitavas de final</p>
+          <span class="chip">M89-M96</span>
+        </div>
+        <div class="knockout-match-grid">
+          ${simulation.roundOf16.map(renderKnockoutMatch).join('')}
+        </div>
+      </section>
+      <section class="knockout-round">
+        <div class="panel__header">
+          <p class="panel__label">Quartas de final</p>
+          <span class="chip">M97-M100</span>
+        </div>
+        <div class="knockout-match-grid">
+          ${simulation.quarterFinals.map(renderKnockoutMatch).join('')}
+        </div>
+      </section>
+      <section class="knockout-round">
+        <div class="panel__header">
+          <p class="panel__label">Semifinais</p>
+          <span class="chip">M101-M102</span>
+        </div>
+        <div class="knockout-match-grid">
+          ${simulation.semiFinals.map(renderKnockoutMatch).join('')}
+        </div>
+      </section>
+      <section class="knockout-round knockout-round--finals">
+        <div class="panel__header">
+          <p class="panel__label">Finais</p>
+          <span class="chip chip--accent">M103-M104</span>
+        </div>
+        <div class="knockout-match-grid">
+          ${simulation.final.map(renderKnockoutMatch).join('')}
+        </div>
+      </section>
     </section>
   `;
 }
