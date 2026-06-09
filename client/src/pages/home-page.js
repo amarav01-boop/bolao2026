@@ -342,6 +342,10 @@ function renderBestThirds(bestThirds = []) {
 }
 
 function renderKnockoutSimulation(state) {
+  if (!state.activePrediction?.canEdit) {
+    return '';
+  }
+
   const standingsByCode = buildPredictedGroupStandingsByCode(state);
 
   if (standingsByCode.size < 12) {
