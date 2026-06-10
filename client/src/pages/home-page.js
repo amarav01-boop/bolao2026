@@ -767,12 +767,7 @@ function renderChatMessage(message) {
   return `
     <article class="chat-message${message.isDirectedToCurrentParticipant ? ' chat-message--directed' : ''}">
       <div class="chat-message__header">
-        ${renderParticipantBadge({
-          nickname: message.sender?.nickname || 'Participante',
-          city: message.sender?.city || '',
-          avatarKey: message.sender?.avatarKey || '',
-          compact: true
-        })}
+        <strong class="chat-message__sender">${escapeHtml(message.sender?.nickname || 'Participante')}</strong>
         <time datetime="${escapeHtml(message.createdAt || '')}">
           ${escapeHtml(formatChatDateTime(message.createdAt))}
         </time>
@@ -833,6 +828,7 @@ export function renderChatMentionOptions(participants = []) {
 export function renderHomeChat(chatState = {}) {
   const messages = chatState.messages || [];
   const characterCount = Array.from(chatState.draft || '').length;
+  const emojiShortcuts = ['⚽', '😂', '🔥', '😱', '👏', '🇧🇷'];
 
   return `
     <section class="panel home-chat-card">
@@ -843,13 +839,67 @@ export function renderHomeChat(chatState = {}) {
         </div>
         <span class="chip chip--accent">Público</span>
       </div>
+      <div class="chat-room">
+        <div class="chat-message-list" data-chat-message-list aria-live="polite">
+          ${
+            chatState.isLoading && !messages.length
+              ? `
+                <div class="home-insight-empty">
+                  <strong>Carregando a resenha</strong>
+                  <span>Buscando as mensagens mais recentes.</span>
+                </div>
+              `
+              : messages.length
+              ? messages.map(renderChatMessage).join('')
+              : `
+                <div class="home-insight-empty">
+                  <strong>A resenha ainda não começou</strong>
+                  <span>Seja o primeiro a mandar uma mensagem para a turma.</span>
+                </div>
+              `
+          }
+          ${
+            chatState.hasMore
+              ? `
+                <button
+                  class="btn btn--secondary chat-load-more"
+                  type="button"
+                  data-chat-load-more
+                  ${chatState.isLoadingOlder ? 'disabled' : ''}
+                >
+                  ${chatState.isLoadingOlder ? 'Carregando...' : 'Carregar mensagens anteriores'}
+                </button>
+              `
+              : ''
+          }
+        </div>
+      </div>
       <form class="chat-composer" data-chat-form novalidate>
+        <div class="chat-emoji-toolbar" aria-label="Emojis rápidos">
+          <span>Emojis</span>
+          <div class="chat-emoji-actions">
+            ${emojiShortcuts
+              .map(
+                (emoji) => `
+                  <button
+                    class="chat-emoji-button"
+                    type="button"
+                    data-chat-emoji="${emoji}"
+                    aria-label="Adicionar emoji ${emoji}"
+                    title="Adicionar ${emoji}"
+                    ${chatState.isSending ? 'disabled' : ''}
+                  >${emoji}</button>
+                `
+              )
+              .join('')}
+          </div>
+        </div>
         <label class="chat-composer__field" for="chat-message">
           <span class="field__label">Sua mensagem</span>
           <textarea
             id="chat-message"
             name="content"
-            rows="3"
+            rows="2"
             data-chat-input
             placeholder="Escreva sua mensagem. Use @ para mencionar alguém."
             ${chatState.isSending ? 'disabled' : ''}
@@ -871,39 +921,6 @@ export function renderHomeChat(chatState = {}) {
             : ''
         }
       </form>
-      <div class="chat-message-list" data-chat-message-list aria-live="polite">
-        ${
-          chatState.isLoading && !messages.length
-            ? `
-              <div class="home-insight-empty">
-                <strong>Carregando a resenha</strong>
-                <span>Buscando as mensagens mais recentes.</span>
-              </div>
-            `
-            : messages.length
-            ? messages.map(renderChatMessage).join('')
-            : `
-              <div class="home-insight-empty">
-                <strong>A resenha ainda não começou</strong>
-                <span>Seja o primeiro a mandar uma mensagem para a turma.</span>
-              </div>
-            `
-        }
-      </div>
-      ${
-        chatState.hasMore
-          ? `
-            <button
-              class="btn btn--secondary chat-load-more"
-              type="button"
-              data-chat-load-more
-              ${chatState.isLoadingOlder ? 'disabled' : ''}
-            >
-              ${chatState.isLoadingOlder ? 'Carregando...' : 'Carregar mensagens anteriores'}
-            </button>
-          `
-          : ''
-      }
     </section>
   `;
 }

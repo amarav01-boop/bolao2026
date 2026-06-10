@@ -845,6 +845,31 @@ function selectChatMention(participant) {
   }, 0);
 }
 
+function insertChatEmoji(input, emoji) {
+  const start = input.selectionStart ?? state.chat.draft.length;
+  const end = input.selectionEnd ?? start;
+  const nextDraft = `${state.chat.draft.slice(0, start)}${emoji}${state.chat.draft.slice(end)}`;
+
+  if (Array.from(nextDraft).length > 240) {
+    state.chat.error = 'A mensagem deve ter no máximo 240 caracteres.';
+    render();
+    return;
+  }
+
+  state.chat.draft = nextDraft;
+  state.chat.error = null;
+  render();
+
+  window.setTimeout(() => {
+    const nextInput = app.querySelector('[data-chat-input]');
+    if (nextInput) {
+      const cursor = start + emoji.length;
+      nextInput.focus();
+      nextInput.setSelectionRange(cursor, cursor);
+    }
+  }, 0);
+}
+
 function updateChatMentionPopover(input) {
   const popover = app.querySelector('[data-chat-mention-options]');
   const counter = app.querySelector('[data-chat-character-count]');
@@ -867,6 +892,18 @@ function updateChatMentionPopover(input) {
     return;
   }
 
+  if (
+    state.chat.mentionedParticipantId &&
+    state.chat.mentionedNickname &&
+    state.chat.draft.includes(`@${state.chat.mentionedNickname}`)
+  ) {
+    state.chat.mentionStart = null;
+    state.chat.mentionEnd = null;
+    popover.hidden = true;
+    popover.innerHTML = '';
+    return;
+  }
+
   const context = findChatMentionContext(
     state.chat.draft,
     input.selectionStart ?? state.chat.draft.length
@@ -885,6 +922,14 @@ function updateChatMentionPopover(input) {
       participant.nickname.toLocaleLowerCase('pt-BR').includes(context.query)
     )
     .slice(0, 8);
+
+  if (!matches.length) {
+    state.chat.mentionStart = null;
+    state.chat.mentionEnd = null;
+    popover.hidden = true;
+    popover.innerHTML = '';
+    return;
+  }
 
   state.chat.mentionStart = context.start;
   state.chat.mentionEnd = context.end;
@@ -1148,6 +1193,7 @@ function bindParticipantForms() {
   const chatForm = app.querySelector('[data-chat-form]');
   const chatInput = app.querySelector('[data-chat-input]');
   const chatLoadMoreButton = app.querySelector('[data-chat-load-more]');
+  const chatEmojiButtons = app.querySelectorAll('[data-chat-emoji]');
 
   if (chatInput) {
     chatInput.addEventListener('input', (event) => {
@@ -1178,6 +1224,14 @@ function bindParticipantForms() {
     chatForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       await submitChatMessage();
+    });
+  }
+
+  if (chatEmojiButtons.length && chatInput) {
+    chatEmojiButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        insertChatEmoji(chatInput, button.getAttribute('data-chat-emoji') || '');
+      });
     });
   }
 
