@@ -3,6 +3,7 @@ import './styles/layout.css';
 import './styles/forms.css';
 import './styles/ranking.css';
 import './styles/admin.css';
+import './styles/chat.css';
 
 import { fetchJson } from './api/api-client.js';
 import {
@@ -27,10 +28,15 @@ import {
 } from './api/admin-api.js';
 import { getActivePhasePredictions, saveActivePhasePredictions } from './api/prediction-api.js';
 import { getHomeState } from './api/home-api.js';
+import {
+  createChatMessage,
+  getChatMessages,
+  getChatParticipants
+} from './api/chat-api.js';
 import { getRanking } from './api/ranking-api.js';
 import { getRevealState } from './api/reveal-api.js';
 import { renderAuthPage } from './pages/register-page.js';
-import { renderHomePage } from './pages/home-page.js';
+import { renderChatMentionOptions, renderHomePage } from './pages/home-page.js';
 import { renderRulesPage } from './pages/rules-page.js';
 import { renderRankingPage } from './pages/ranking-page.js';
 import { renderRevealPage } from './pages/reveal-page.js';
@@ -42,6 +48,7 @@ import { escapeHtml } from './utils/escape-html.js';
 const app = document.querySelector('#app');
 const toastRoot = document.querySelector('#toast-root');
 const DEFAULT_ADMIN_USERNAME = 'admin@bolao.local';
+const CHAT_POLL_INTERVAL_MS = 10000;
 
 function getInitialRoute() {
   if (window.location.pathname.startsWith('/regras')) {
@@ -167,6 +174,22 @@ const state = {
   sessionHydrated: false,
   homeState: null,
   homeLoadError: null,
+  chat: {
+    messages: [],
+    participants: [],
+    draft: '',
+    mentionedParticipantId: null,
+    mentionedNickname: '',
+    mentionStart: null,
+    mentionEnd: null,
+    isLoading: false,
+    isLoadingOlder: false,
+    isSending: false,
+    error: null,
+    hasMore: false,
+    nextBeforeId: null
+  },
+  chatPollTimer: null,
   rankingState: null,
   rankingLoadError: null,
   revealState: null,
@@ -309,6 +332,10 @@ function readSelectedOptionText(form, selector) {
 }
 
 function setRoute(nextRoute) {
+  if (nextRoute !== 'participant') {
+    clearChatPolling();
+  }
+
   state.route = nextRoute;
   const routePaths = {
     admin: '/admin',
@@ -443,6 +470,120 @@ function clearPredictionSaveTimer() {
   }
 }
 
+function clearChatPolling() {
+  if (state.chatPollTimer) {
+    window.clearTimeout(state.chatPollTimer);
+    state.chatPollTimer = null;
+  }
+}
+
+function resetChatWorkspace() {
+  clearChatPolling();
+  state.chat = {
+    messages: [],
+    participants: [],
+    draft: '',
+    mentionedParticipantId: null,
+    mentionedNickname: '',
+    mentionStart: null,
+    mentionEnd: null,
+    isLoading: false,
+    isLoadingOlder: false,
+    isSending: false,
+    error: null,
+    hasMore: false,
+    nextBeforeId: null
+  };
+}
+
+function mergeChatMessages(...messageGroups) {
+  const messagesById = new Map();
+
+  messageGroups.flat().forEach((message) => {
+    const id = Number(message?.id);
+    if (id) {
+      messagesById.set(id, {
+        ...message,
+        id
+      });
+    }
+  });
+
+  return [...messagesById.values()].sort((left, right) => right.id - left.id);
+}
+
+function chatMessagesChanged(previousMessages, nextMessages) {
+  if (previousMessages.length !== nextMessages.length) {
+    return true;
+  }
+
+  return previousMessages.some((message, index) => message.id !== nextMessages[index]?.id);
+}
+
+function scheduleChatPolling() {
+  clearChatPolling();
+
+  if (!state.participantSession || state.route !== 'participant' || state.connection === 'offline') {
+    return;
+  }
+
+  state.chatPollTimer = window.setTimeout(async () => {
+    state.chatPollTimer = null;
+
+    try {
+      const response = await getChatMessages({ limit: 30 });
+      const nextMessages = mergeChatMessages(
+        response.data.messages || [],
+        state.chat.messages || []
+      );
+      const shouldRender =
+        Boolean(state.chat.error) ||
+        chatMessagesChanged(state.chat.messages || [], nextMessages);
+
+      state.chat.messages = nextMessages;
+      state.chat.error = null;
+
+      if (shouldRender) {
+        render();
+      }
+
+      scheduleChatPolling();
+    } catch (error) {
+      state.chat.error = error.message;
+      clearChatPolling();
+      render();
+    }
+  }, CHAT_POLL_INTERVAL_MS);
+}
+
+async function loadChatWorkspace() {
+  clearChatPolling();
+  state.chat.isLoading = true;
+  state.chat.error = null;
+
+  try {
+    const [messageResponse, participantResponse] = await Promise.all([
+      getChatMessages({ limit: 30 }),
+      getChatParticipants()
+    ]);
+
+    state.chat.messages = mergeChatMessages(messageResponse.data.messages || []);
+    state.chat.participants = participantResponse.data.participants || [];
+    state.chat.hasMore = Boolean(messageResponse.data.hasMore);
+    state.chat.nextBeforeId = messageResponse.data.nextBeforeId || null;
+    state.chat.error = null;
+    scheduleChatPolling();
+  } catch (error) {
+    state.chat.messages = [];
+    state.chat.participants = [];
+    state.chat.hasMore = false;
+    state.chat.nextBeforeId = null;
+    state.chat.error = error.message;
+  } finally {
+    state.chat.isLoading = false;
+  }
+}
+
 function createPredictionDrafts(activePrediction) {
   const drafts = {};
 
@@ -498,6 +639,7 @@ function resetPredictionWorkspace() {
 
 async function loadParticipantWorkspace() {
   clearPredictionSaveTimer();
+  clearChatPolling();
   state.predictionLoadError = null;
   state.homeLoadError = null;
 
@@ -536,6 +678,8 @@ async function loadParticipantWorkspace() {
     state.predictionLoadError = error.message;
     state.homeLoadError = error.message;
   }
+
+  await loadChatWorkspace();
 }
 
 async function loadRankingWorkspace() {
@@ -655,6 +799,181 @@ async function refreshAdminOverview() {
   state.adminOverview = response.data;
   state.adminForms.registrationState = Boolean(state.adminOverview.registrationState?.isRegistrationOpen);
   render();
+}
+
+function findChatMentionContext(value, cursorPosition) {
+  const beforeCursor = String(value || '').slice(0, cursorPosition);
+  const match = beforeCursor.match(/(^|\s)@([^@\n]*)$/u);
+
+  if (!match) {
+    return null;
+  }
+
+  const start = match.index + match[1].length;
+  return {
+    start,
+    end: cursorPosition,
+    query: match[2].trim().toLocaleLowerCase('pt-BR')
+  };
+}
+
+function selectChatMention(participant) {
+  const start = state.chat.mentionStart;
+  const end = state.chat.mentionEnd;
+
+  if (start === null || end === null) {
+    return;
+  }
+
+  const prefix = state.chat.draft.slice(0, start);
+  const suffix = state.chat.draft.slice(end);
+  const insertedMention = `@${participant.nickname} `;
+  state.chat.draft = `${prefix}${insertedMention}${suffix}`;
+  state.chat.mentionedParticipantId = Number(participant.id);
+  state.chat.mentionedNickname = participant.nickname;
+  state.chat.mentionStart = null;
+  state.chat.mentionEnd = null;
+  render();
+
+  window.setTimeout(() => {
+    const input = app.querySelector('[data-chat-input]');
+    if (input) {
+      const cursor = prefix.length + insertedMention.length;
+      input.focus();
+      input.setSelectionRange(cursor, cursor);
+    }
+  }, 0);
+}
+
+function updateChatMentionPopover(input) {
+  const popover = app.querySelector('[data-chat-mention-options]');
+  const counter = app.querySelector('[data-chat-character-count]');
+  const characterCount = Array.from(state.chat.draft).length;
+
+  if (counter) {
+    counter.textContent = `${characterCount}/240`;
+    counter.classList.toggle('chat-character-count--danger', characterCount > 240);
+  }
+
+  if (
+    state.chat.mentionedNickname &&
+    !state.chat.draft.includes(`@${state.chat.mentionedNickname}`)
+  ) {
+    state.chat.mentionedParticipantId = null;
+    state.chat.mentionedNickname = '';
+  }
+
+  if (!popover) {
+    return;
+  }
+
+  const context = findChatMentionContext(
+    state.chat.draft,
+    input.selectionStart ?? state.chat.draft.length
+  );
+
+  if (!context) {
+    state.chat.mentionStart = null;
+    state.chat.mentionEnd = null;
+    popover.hidden = true;
+    popover.innerHTML = '';
+    return;
+  }
+
+  const matches = state.chat.participants
+    .filter((participant) =>
+      participant.nickname.toLocaleLowerCase('pt-BR').includes(context.query)
+    )
+    .slice(0, 8);
+
+  state.chat.mentionStart = context.start;
+  state.chat.mentionEnd = context.end;
+  popover.innerHTML = renderChatMentionOptions(matches);
+  popover.hidden = false;
+
+  popover.querySelectorAll('[data-chat-mention-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const participantId = Number(button.getAttribute('data-chat-mention-id'));
+      const participant = state.chat.participants.find(
+        (item) => Number(item.id) === participantId
+      );
+
+      if (participant) {
+        selectChatMention(participant);
+      }
+    });
+  });
+}
+
+async function submitChatMessage() {
+  const characterCount = Array.from(state.chat.draft).length;
+
+  if (!state.chat.draft.trim()) {
+    state.chat.error = 'Digite uma mensagem antes de enviar.';
+    render();
+    return;
+  }
+
+  if (characterCount > 240) {
+    state.chat.error = 'A mensagem deve ter no máximo 240 caracteres.';
+    render();
+    return;
+  }
+
+  state.chat.isSending = true;
+  state.chat.error = null;
+  render();
+
+  try {
+    const response = await createChatMessage({
+      content: state.chat.draft,
+      mentionedParticipantId: state.chat.mentionedParticipantId
+    });
+
+    state.chat.messages = mergeChatMessages(
+      [response.data.message],
+      state.chat.messages
+    );
+    state.chat.draft = '';
+    state.chat.mentionedParticipantId = null;
+    state.chat.mentionedNickname = '';
+    state.chat.mentionStart = null;
+    state.chat.mentionEnd = null;
+    state.chat.error = null;
+  } catch (error) {
+    state.chat.error = error.message;
+  } finally {
+    state.chat.isSending = false;
+    render();
+  }
+}
+
+async function loadOlderChatMessages() {
+  if (!state.chat.nextBeforeId || state.chat.isLoadingOlder) {
+    return;
+  }
+
+  state.chat.isLoadingOlder = true;
+  state.chat.error = null;
+  render();
+
+  try {
+    const response = await getChatMessages({
+      limit: 30,
+      beforeId: state.chat.nextBeforeId
+    });
+    state.chat.messages = mergeChatMessages(
+      state.chat.messages,
+      response.data.messages || []
+    );
+    state.chat.hasMore = Boolean(response.data.hasMore);
+    state.chat.nextBeforeId = response.data.nextBeforeId || null;
+  } catch (error) {
+    state.chat.error = error.message;
+  } finally {
+    state.chat.isLoadingOlder = false;
+    render();
+  }
 }
 
 function bindParticipantForms() {
@@ -807,6 +1126,7 @@ function bindParticipantForms() {
         state.participantSession = null;
         state.sessionParticipant = null;
         resetPredictionWorkspace();
+        resetChatWorkspace();
         state.homeState = null;
         state.rankingState = null;
         state.revealState = null;
@@ -825,6 +1145,45 @@ function bindParticipantForms() {
   const predictionInputs = app.querySelectorAll('[data-prediction-input]');
   const extraPredictionInputs = app.querySelectorAll('[data-extra-prediction-input]');
   const knockoutWinnerButtons = app.querySelectorAll('[data-knockout-winner-match]');
+  const chatForm = app.querySelector('[data-chat-form]');
+  const chatInput = app.querySelector('[data-chat-input]');
+  const chatLoadMoreButton = app.querySelector('[data-chat-load-more]');
+
+  if (chatInput) {
+    chatInput.addEventListener('input', (event) => {
+      state.chat.draft = event.target.value;
+      updateChatMentionPopover(event.target);
+    });
+
+    chatInput.addEventListener('keydown', (event) => {
+      const popover = app.querySelector('[data-chat-mention-options]');
+
+      if (event.key === 'Escape' && popover && !popover.hidden) {
+        popover.hidden = true;
+        state.chat.mentionStart = null;
+        state.chat.mentionEnd = null;
+      }
+
+      if (event.key === 'ArrowDown' && popover && !popover.hidden) {
+        const firstOption = popover.querySelector('[data-chat-mention-id]');
+        if (firstOption) {
+          event.preventDefault();
+          firstOption.focus();
+        }
+      }
+    });
+  }
+
+  if (chatForm) {
+    chatForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      await submitChatMessage();
+    });
+  }
+
+  if (chatLoadMoreButton) {
+    chatLoadMoreButton.addEventListener('click', loadOlderChatMessages);
+  }
 
   if (predictionGroupTabs.length) {
     predictionGroupTabs.forEach((button) => {
@@ -1329,6 +1688,7 @@ async function boot() {
       }
     } else {
       resetPredictionWorkspace();
+      resetChatWorkspace();
     }
   } catch (error) {
     state.connection = 'offline';
@@ -1354,6 +1714,13 @@ window.addEventListener('popstate', () => {
   } else {
     state.route = 'participant';
   }
+
+  if (state.route !== 'participant') {
+    clearChatPolling();
+  } else if (state.participantSession) {
+    scheduleChatPolling();
+  }
+
   render();
 });
 

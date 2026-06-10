@@ -748,11 +748,174 @@ function renderExactHitHighlights(homeState) {
   `;
 }
 
-function renderHomeInsights(homeState) {
+function formatChatDateTime(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function renderChatMessage(message) {
   return `
-    <div class="home-insights-grid">
-      ${renderDailyPredictionDistribution(homeState)}
-      ${renderExactHitHighlights(homeState)}
+    <article class="chat-message${message.isDirectedToCurrentParticipant ? ' chat-message--directed' : ''}">
+      <div class="chat-message__header">
+        ${renderParticipantBadge({
+          nickname: message.sender?.nickname || 'Participante',
+          city: message.sender?.city || '',
+          avatarKey: message.sender?.avatarKey || '',
+          compact: true
+        })}
+        <time datetime="${escapeHtml(message.createdAt || '')}">
+          ${escapeHtml(formatChatDateTime(message.createdAt))}
+        </time>
+      </div>
+      ${
+        message.isDirectedToCurrentParticipant
+          ? '<span class="chat-message__directed-label">Mensagem para você</span>'
+          : ''
+      }
+      ${message.content ? `<p class="chat-message__content">${escapeHtml(message.content)}</p>` : ''}
+      ${
+        message.imageUrl
+          ? `
+            <a
+              class="chat-message__image-link"
+              href="${escapeHtml(message.imageUrl)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Abrir imagem da mensagem"
+            >
+              <img
+                class="chat-message__thumbnail"
+                src="${escapeHtml(message.imageUrl)}"
+                alt="Imagem compartilhada no chat"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+            </a>
+          `
+          : ''
+      }
+    </article>
+  `;
+}
+
+export function renderChatMentionOptions(participants = []) {
+  if (!participants.length) {
+    return '<span class="chat-mention-empty">Nenhum participante encontrado.</span>';
+  }
+
+  return participants
+    .map(
+      (participant) => `
+        <button
+          class="chat-mention-option"
+          type="button"
+          role="option"
+          data-chat-mention-id="${escapeHtml(participant.id)}"
+          data-chat-mention-nickname="${escapeHtml(participant.nickname)}"
+        >
+          <strong>@${escapeHtml(participant.nickname)}</strong>
+        </button>
+      `
+    )
+    .join('');
+}
+
+export function renderHomeChat(chatState = {}) {
+  const messages = chatState.messages || [];
+  const characterCount = Array.from(chatState.draft || '').length;
+
+  return `
+    <section class="panel home-chat-card">
+      <div class="panel__header">
+        <div>
+          <p class="panel__label">Resenha da Vila</p>
+          <h2 class="home-insight-card__title">Chat dos participantes</h2>
+        </div>
+        <span class="chip chip--accent">Público</span>
+      </div>
+      <form class="chat-composer" data-chat-form novalidate>
+        <label class="chat-composer__field" for="chat-message">
+          <span class="field__label">Sua mensagem</span>
+          <textarea
+            id="chat-message"
+            name="content"
+            rows="3"
+            data-chat-input
+            placeholder="Escreva sua mensagem. Use @ para mencionar alguém."
+            ${chatState.isSending ? 'disabled' : ''}
+          >${escapeHtml(chatState.draft || '')}</textarea>
+        </label>
+        <div class="chat-mention-popover" data-chat-mention-options role="listbox" hidden></div>
+        <div class="chat-composer__footer">
+          <span class="chat-character-count${characterCount > 240 ? ' chat-character-count--danger' : ''}" data-chat-character-count>
+            ${characterCount}/240
+          </span>
+          <button class="btn btn--primary btn--inline" type="submit" ${chatState.isSending ? 'disabled' : ''}>
+            ${chatState.isSending ? 'Enviando...' : 'Enviar'}
+          </button>
+        </div>
+        <p class="form-note">Emojis são bem-vindos. Imagens: &lt;img src="https://..."&gt;.</p>
+        ${
+          chatState.error
+            ? `<p class="field__error" role="alert">${escapeHtml(chatState.error)}</p>`
+            : ''
+        }
+      </form>
+      <div class="chat-message-list" data-chat-message-list aria-live="polite">
+        ${
+          chatState.isLoading && !messages.length
+            ? `
+              <div class="home-insight-empty">
+                <strong>Carregando a resenha</strong>
+                <span>Buscando as mensagens mais recentes.</span>
+              </div>
+            `
+            : messages.length
+            ? messages.map(renderChatMessage).join('')
+            : `
+              <div class="home-insight-empty">
+                <strong>A resenha ainda não começou</strong>
+                <span>Seja o primeiro a mandar uma mensagem para a turma.</span>
+              </div>
+            `
+        }
+      </div>
+      ${
+        chatState.hasMore
+          ? `
+            <button
+              class="btn btn--secondary chat-load-more"
+              type="button"
+              data-chat-load-more
+              ${chatState.isLoadingOlder ? 'disabled' : ''}
+            >
+              ${chatState.isLoadingOlder ? 'Carregando...' : 'Carregar mensagens anteriores'}
+            </button>
+          `
+          : ''
+      }
+    </section>
+  `;
+}
+
+function renderHomeCommunitySection(state, homeState) {
+  return `
+    <div class="home-community-grid">
+      ${renderHomeChat(state.chat)}
+      <div class="home-insights-stack">
+        ${renderDailyPredictionDistribution(homeState)}
+        ${renderExactHitHighlights(homeState)}
+      </div>
     </div>
   `;
 }
@@ -772,7 +935,7 @@ function renderActivePredictionPage(state, participant) {
           body: state.predictionLoadError || 'Assim que o admin abrir uma fase, seus palpites vão aparecer aqui.'
         })}
       </section>
-      ${renderHomeInsights(homeState)}
+      ${renderHomeCommunitySection(state, homeState)}
       <section class="panel panel--span-12">
         ${renderEmptyState({
           title: 'Palpites aguardando fase aberta',
@@ -828,7 +991,7 @@ function renderActivePredictionPage(state, participant) {
       </div>
     </section>
 
-    ${renderHomeInsights(homeState)}
+    ${renderHomeCommunitySection(state, homeState)}
 
     ${
       predictionState.canEdit

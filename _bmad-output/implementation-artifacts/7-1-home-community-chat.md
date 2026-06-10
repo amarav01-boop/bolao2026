@@ -1,6 +1,6 @@
 # Story 7.1: Home Community Chat
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -23,50 +23,50 @@ so that the bolao has a shared place for conversation, reactions, and playful ri
 
 ## Tasks / Subtasks
 
-- [ ] Create chat persistence and indexes (AC: 1, 2, 3, 10)
-  - [ ] Add `server/db/migrations/014_create_chat_messages.sql`.
-  - [ ] Create `chat_messages` with `id BIGINT UNSIGNED`, `participant_id`, nullable `mentioned_participant_id`, `content VARCHAR(240)`, nullable `image_url VARCHAR(1024)`, and `created_at`.
-  - [ ] Add foreign keys to `participants`; use `ON DELETE SET NULL` for the mentioned participant and preserve sender integrity.
-  - [ ] Add indexes supporting `ORDER BY id DESC` and mentioned-participant lookup.
+- [x] Create chat persistence and indexes (AC: 1, 2, 3, 10)
+  - [x] Add `server/db/migrations/014_create_chat_messages.sql`.
+  - [x] Create `chat_messages` with `id BIGINT UNSIGNED`, `participant_id`, nullable `mentioned_participant_id`, `content VARCHAR(240)`, nullable `image_url VARCHAR(1024)`, and `created_at`.
+  - [x] Add foreign keys to `participants`; use `ON DELETE SET NULL` for the mentioned participant and preserve sender integrity.
+  - [x] Add indexes supporting `ORDER BY id DESC` and mentioned-participant lookup.
 
-- [ ] Implement secure chat backend boundaries (AC: 1-7, 9, 10)
-  - [ ] Add `server/schemas/chat-schemas.js` with Zod validation for content, mention ID, `limit`, and `beforeId`.
-  - [ ] Add `server/repositories/chat-repository.js` with parameterized queries only.
-  - [ ] Add `server/services/chat-service.js` for participant authorization, normalization, mention validation, image extraction, and response mapping.
-  - [ ] Add `server/routes/chat-routes.js` with authenticated `GET /api/chat/messages`, `GET /api/chat/participants`, and `POST /api/chat/messages`.
-  - [ ] Mount chat routes in `server/app.js`.
-  - [ ] Return the established `{ data }` / `{ error: { code, message, details } }` API shape.
+- [x] Implement secure chat backend boundaries (AC: 1-7, 9, 10)
+  - [x] Add `server/schemas/chat-schemas.js` with Zod validation for content, mention ID, `limit`, and `beforeId`.
+  - [x] Add `server/repositories/chat-repository.js` with parameterized queries only.
+  - [x] Add `server/services/chat-service.js` for participant authorization, normalization, mention validation, image extraction, and response mapping.
+  - [x] Add `server/routes/chat-routes.js` with authenticated `GET /api/chat/messages`, `GET /api/chat/participants`, and `POST /api/chat/messages`.
+  - [x] Mount chat routes in `server/app.js`.
+  - [x] Return the established `{ data }` / `{ error: { code, message, details } }` API shape.
 
-- [ ] Implement message and image safety (AC: 5-7)
-  - [ ] Count the original normalized input against the 240-character limit before extracting image markup.
-  - [ ] Support zero or one exact `<img src="HTTPS_URL">` reference; do not support arbitrary HTML.
-  - [ ] Validate URLs with the standard `URL` API and allow `https:` only.
-  - [ ] Store plain message content and validated `image_url` separately.
-  - [ ] Never render user content with unsanitized `innerHTML`; use `escapeHtml` for text and set image attributes from the validated API field.
-  - [ ] Render images with `loading="lazy"`, `referrerpolicy="no-referrer"`, fixed max dimensions, and `object-fit`.
+- [x] Implement message and image safety (AC: 5-7)
+  - [x] Count the original normalized input against the 240-character limit before extracting image markup.
+  - [x] Support zero or one exact `<img src="HTTPS_URL">` reference; do not support arbitrary HTML.
+  - [x] Validate URLs with the standard `URL` API and allow `https:` only.
+  - [x] Store plain message content and validated `image_url` separately.
+  - [x] Never render user content with unsanitized `innerHTML`; use `escapeHtml` for text and set image attributes from the validated API field.
+  - [x] Render images with `loading="lazy"`, `referrerpolicy="no-referrer"`, fixed max dimensions, and `object-fit`.
 
-- [ ] Add Home chat API and client state (AC: 1-4, 9, 10)
-  - [ ] Add `client/src/api/chat-api.js`.
-  - [ ] Extend `client/src/main.js` with chat messages, draft, mention selection, loading/error/sending state, pagination cursor, and polling timer.
-  - [ ] Load chat independently from `/api/home` so polling does not recalculate ranking and Home analytics.
-  - [ ] Poll the latest page every 10 seconds only while an authenticated participant is on Home.
-  - [ ] Clear the timer on logout, route change, offline/error state, and before starting a replacement timer.
-  - [ ] Merge refreshed messages by numeric ID to prevent duplicates.
+- [x] Add Home chat API and client state (AC: 1-4, 9, 10)
+  - [x] Add `client/src/api/chat-api.js`.
+  - [x] Extend `client/src/main.js` with chat messages, draft, mention selection, loading/error/sending state, pagination cursor, and polling timer.
+  - [x] Load chat independently from `/api/home` so polling does not recalculate ranking and Home analytics.
+  - [x] Poll the latest page every 10 seconds only while an authenticated participant is on Home.
+  - [x] Clear the timer on logout, route change, offline/error state, and before starting a replacement timer.
+  - [x] Merge refreshed messages by numeric ID to prevent duplicates.
 
-- [ ] Build the responsive Home chat experience (AC: 1-5, 8-10)
-  - [ ] Add a dedicated chat card to `client/src/pages/home-page.js`; keep it visible whether prediction entry is open or closed.
-  - [ ] Place the composer above the message list and show a live `0/240` character counter.
-  - [ ] Render newest messages first with participant identity, timestamp, content, optional thumbnail, and mention styling.
-  - [ ] Add an `@` suggestion popover using the public participant list, excluding admin accounts.
-  - [ ] Use keyboard-accessible suggestion selection and preserve the native emoji keyboard/input behavior without adding a heavy emoji dependency.
-  - [ ] Add a compact empty state and a "Carregar mensagens anteriores" action.
-  - [ ] Add chat styling in a focused stylesheet such as `client/src/styles/chat.css`, imported by the existing stylesheet entry point.
+- [x] Build the responsive Home chat experience (AC: 1-5, 8-10)
+  - [x] Add a dedicated chat card to `client/src/pages/home-page.js`; keep it visible whether prediction entry is open or closed.
+  - [x] Place the composer above the message list and show a live `0/240` character counter.
+  - [x] Render newest messages first with participant identity, timestamp, content, optional thumbnail, and mention styling.
+  - [x] Add an `@` suggestion popover using the public participant list, excluding admin accounts.
+  - [x] Use keyboard-accessible suggestion selection and preserve the native emoji keyboard/input behavior without adding a heavy emoji dependency.
+  - [x] Add a compact empty state and a "Carregar mensagens anteriores" action.
+  - [x] Add chat styling in a focused stylesheet such as `client/src/styles/chat.css`, imported by the existing stylesheet entry point.
 
-- [ ] Add focused tests and regression validation (AC: 1-10)
-  - [ ] Unit-test message normalization, Unicode length, safe image extraction, forbidden protocols/markup, and mention validation.
-  - [ ] Test repository/service pagination order and no-row-on-validation-error behavior.
-  - [ ] Add a frontend render smoke test covering directed-message highlighting, escaped markup, fixed thumbnail class, and newest-first order.
-  - [ ] Run the complete server test suite and production client build.
+- [x] Add focused tests and regression validation (AC: 1-10)
+  - [x] Unit-test message normalization, Unicode length, safe image extraction, forbidden protocols/markup, and mention validation.
+  - [x] Test repository/service pagination order and no-row-on-validation-error behavior.
+  - [x] Add a frontend render smoke test covering directed-message highlighting, escaped markup, fixed thumbnail class, and newest-first order.
+  - [x] Run the complete server test suite and production client build.
 
 ## Dev Notes
 
@@ -246,10 +246,46 @@ CREATE TABLE chat_messages (
 
 Codex
 
+### Implementation Plan
+
+- Build and test the secure persistence/API boundary first.
+- Add isolated frontend chat state with polling, pagination, and mention selection.
+- Compose the chat and Home insights in the requested responsive two-column layout.
+- Validate the MariaDB migration, complete test suite, production build, and authentication boundary.
+
 ### Debug Log References
+
+- TDD red phase confirmed with missing `chat-service` module before implementation.
+- `npm.cmd run test --workspace server`: 24 tests passing.
+- `npm.cmd run build:client`: production build completed.
+- `npm.cmd run migrate:server`: migration 014 applied and rerun idempotently.
+- Auth guard smoke test: both chat GET endpoints return HTTP 401 without a participant session.
 
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
+- Added a public participant chat with 10-second polling, cursor pagination, deduplication, mentions, Unicode emojis, and database-backed antiflood.
+- Added strict server-side image extraction supporting only one HTTPS `<img src="...">` reference while rejecting arbitrary or executable HTML.
+- Added the requested Home composition: full chat column on the left and Daily Predictions plus Acertou na Mosca stacked on the right, collapsing responsively on smaller screens.
+- Applied and verified the MariaDB chat migration locally.
 
 ### File List
+
+- `_bmad-output/implementation-artifacts/7-1-home-community-chat.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `client/src/api/chat-api.js`
+- `client/src/main.js`
+- `client/src/pages/home-page.js`
+- `client/src/styles/chat.css`
+- `server/app.js`
+- `server/db/migrations/014_create_chat_messages.sql`
+- `server/repositories/chat-repository.js`
+- `server/routes/chat-routes.js`
+- `server/schemas/chat-schemas.js`
+- `server/services/chat-service.js`
+- `server/tests/chat-service.test.js`
+- `server/tests/home-chat-render.test.js`
+
+## Change Log
+
+- 2026-06-09: Implemented Story 7.1 Home Community Chat and moved it to review.
