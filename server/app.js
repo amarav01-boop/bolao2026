@@ -11,6 +11,7 @@ const predictionRoutes = require('./routes/prediction-routes');
 const rankingRoutes = require('./routes/ranking-routes');
 const homeRoutes = require('./routes/home-routes');
 const revealRoutes = require('./routes/reveal-routes');
+const chatRoutes = require('./routes/chat-routes');
 const healthRoutes = require('./routes/health-routes');
 const { notFoundHandler, errorHandler } = require('./middleware/error-handler');
 
@@ -61,6 +62,7 @@ app.use('/api/predictions', predictionRoutes);
 app.use('/api/ranking', rankingRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/reveal', revealRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/health', healthRoutes);
 
 const clientDist = path.resolve(__dirname, '..', 'client', 'dist');

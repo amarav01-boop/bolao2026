@@ -926,3 +926,56 @@ So that I understand scoring, deadlines, defaults, reveal behavior, and ranking.
 **When** rules content renders
 **Then** it remains readable without horizontal overflow
 
+## Epic 7: Community Chat
+
+Participants can exchange public messages on Home, use emojis and safe image references, and direct attention to another participant with mentions.
+
+### Story 7.1: Home Community Chat
+
+**Requirements:** New community engagement requirement
+
+As a participant,
+I want to exchange public messages with the other participants from Home,
+So that the bolao has a shared place for conversation, reactions, and playful rivalry.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated participant opens Home
+**When** chat messages exist
+**Then** the chat shows public messages from newest to oldest
+**And** each message identifies the sender and creation time
+
+**Given** a participant writes a message
+**When** the message contains text or Unicode emojis and has at most 240 characters
+**Then** it can be published and persisted
+**And** the new message appears at the top of the chat
+
+**Given** a participant types `@` in the composer
+**When** they select another participant
+**Then** the selected participant is stored as the message mention
+**And** the visible message identifies the mentioned nickname
+
+**Given** a public message mentions the currently authenticated participant
+**When** that participant reads the chat
+**Then** the message is visually highlighted as directed to them
+**And** the message remains visible to every other participant
+
+**Given** a message contains one supported image reference
+**When** the reference is a strictly valid HTTPS image tag
+**Then** the image is rendered as a forced small thumbnail
+**And** it cannot resize or disrupt the chat layout
+
+**Given** a message contains scripts, event handlers, unsafe URL protocols, or unsupported HTML
+**When** the server processes or the client renders the message
+**Then** executable content is never executed
+**And** the backend rejects unsupported markup without creating a message
+
+**Given** the message is empty or exceeds 240 characters
+**When** the participant attempts to publish it
+**Then** the backend rejects it with a clear validation response
+**And** no chat row is created
+
+**Given** the participant uses a mobile screen
+**When** the chat, mentions, emojis, or image thumbnails render
+**Then** the composer and message list remain compact and readable without horizontal overflow
+
