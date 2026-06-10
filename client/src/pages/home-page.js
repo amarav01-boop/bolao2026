@@ -830,6 +830,9 @@ function renderActivePredictionPage(state, participant) {
 
     ${renderHomeInsights(homeState)}
 
+    ${
+      predictionState.canEdit
+        ? `
     <section class="panel panel--span-12">
       <div class="panel__header">
         <p class="panel__label">Palpites da fase</p>
@@ -857,6 +860,9 @@ function renderActivePredictionPage(state, participant) {
         </div>
       </form>
     </section>
+    `
+        : ''
+    }
   `;
 
   return renderAppShell({
