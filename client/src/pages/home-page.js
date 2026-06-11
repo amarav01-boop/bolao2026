@@ -749,19 +749,18 @@ function renderExactHitHighlights(homeState) {
   `;
 }
 
-function formatChatDateTime(value) {
-  const date = new Date(value);
+export function formatChatDateTime(value) {
+  const normalizedValue = String(value || '');
+  const dateTimeMatch = normalizedValue.match(
+    /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/
+  );
 
-  if (Number.isNaN(date.getTime())) {
-    return '';
+  if (dateTimeMatch) {
+    const [, , month, day, hour, minute] = dateTimeMatch;
+    return `${day}/${month}, ${hour}:${minute}`;
   }
 
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date);
+  return normalizedValue;
 }
 
 function renderChatMessage(message) {
