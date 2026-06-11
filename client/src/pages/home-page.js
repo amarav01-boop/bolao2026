@@ -12,6 +12,7 @@ import {
 import { buildKnockoutSimulation } from '../utils/knockout-simulator.js';
 
 const BRAND_LABEL = 'BOLÃO DA COPA 2026 - AMIGOS DA VILA OLÍMPIA';
+export const KNOCKOUT_SIMULATOR_ENABLED = false;
 
 function formatDateTime(value) {
   if (!value) {
@@ -341,8 +342,8 @@ function renderBestThirds(bestThirds = []) {
   `;
 }
 
-function renderKnockoutSimulation(state) {
-  if (!state.activePrediction?.canEdit) {
+export function renderKnockoutSimulation(state) {
+  if (!KNOCKOUT_SIMULATOR_ENABLED || !state.activePrediction?.canEdit) {
     return '';
   }
 
