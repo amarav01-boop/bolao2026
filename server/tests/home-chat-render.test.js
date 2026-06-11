@@ -1,6 +1,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+test('formatChatDateTime displays the time received from the database without conversion', async () => {
+  const { formatChatDateTime } = await import('../../client/src/pages/home-page.js');
+
+  assert.equal(
+    formatChatDateTime('2026-06-11T15:30:00.000Z'),
+    '11/06, 15:30'
+  );
+});
+
 test('renderHomeChat renders a continuous text-only room with history before composer', async () => {
   const { renderHomeChat } = await import('../../client/src/pages/home-page.js');
   const html = renderHomeChat({
