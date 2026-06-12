@@ -140,6 +140,56 @@ function renderRevealedGroupStandings(group) {
   `;
 }
 
+export function renderRevealExtras(extras) {
+  if (!extras) {
+    return '';
+  }
+
+  const semiFinalists = extras.semiFinalists || [];
+  const topScorerGoals =
+    extras.topScorer?.goals === null || extras.topScorer?.goals === undefined
+      ? 'Não informado'
+      : String(extras.topScorer.goals);
+
+  return `
+    <section class="revealed-extras" aria-label="Palpites extras do participante">
+      <div class="panel__header">
+        <div>
+          <p class="panel__label">Palpites extras</p>
+          <h3>Escolhas para a Copa</h3>
+        </div>
+        <span class="chip">Somente leitura</span>
+      </div>
+      <dl class="revealed-extras__grid">
+        <div class="revealed-extra-item">
+          <dt>Campeão da Copa</dt>
+          <dd>${escapeHtml(extras.champion?.name || 'Não informado')}</dd>
+        </div>
+        <div class="revealed-extra-item revealed-extra-item--wide">
+          <dt>Semifinalistas</dt>
+          <dd class="revealed-extra-teams">
+            ${[0, 1, 2, 3]
+              .map(
+                (index) => `
+                  <span>${index + 1}. ${escapeHtml(semiFinalists[index]?.name || 'Não informado')}</span>
+                `
+              )
+              .join('')}
+          </dd>
+        </div>
+        <div class="revealed-extra-item">
+          <dt>Artilheiro</dt>
+          <dd>${escapeHtml(extras.topScorer?.name || 'Não informado')}</dd>
+        </div>
+        <div class="revealed-extra-item">
+          <dt>Número de gols</dt>
+          <dd>${escapeHtml(topScorerGoals)}</dd>
+        </div>
+      </dl>
+    </section>
+  `;
+}
+
 function renderRevealedPhases(revealState) {
   if (!revealState?.phases?.length) {
     return renderEmptyState({
@@ -156,6 +206,7 @@ function renderRevealedPhases(revealState) {
             <p class="panel__label">${escapeHtml(phasePayload.phase.name)}</p>
             <span class="chip chip--accent">Revelado</span>
           </div>
+          ${renderRevealExtras(phasePayload.extras)}
           <div class="revealed-group-list">
             ${phasePayload.groups
               .map(
