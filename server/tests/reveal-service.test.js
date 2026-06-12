@@ -1,7 +1,37 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { mergePredictions } = require('../services/reveal-service');
+const { buildRevealExtras, mergePredictions } = require('../services/reveal-service');
+
+test('buildRevealExtras exposes all participant extra predictions as read-only data', () => {
+  const extras = buildRevealExtras({
+    championTeamCode: 'BRA',
+    championTeamName: 'Brasil',
+    topScorerName: 'Vinicius Junior',
+    topScorerGoals: 7,
+    semiFinalist1Code: 'BRA',
+    semiFinalist1Name: 'Brasil',
+    semiFinalist2Code: 'FRA',
+    semiFinalist2Name: 'França',
+    semiFinalist3Code: 'ARG',
+    semiFinalist3Name: 'Argentina',
+    semiFinalist4Code: 'ESP',
+    semiFinalist4Name: 'Espanha',
+    pointsAwarded: null
+  });
+
+  assert.equal(extras.champion.name, 'Brasil');
+  assert.deepEqual(
+    extras.semiFinalists.map((team) => team.name),
+    ['Brasil', 'França', 'Argentina', 'Espanha']
+  );
+  assert.equal(extras.topScorer.name, 'Vinicius Junior');
+  assert.equal(extras.topScorer.goals, 7);
+});
+
+test('buildRevealExtras returns null when the participant has no extra prediction row', () => {
+  assert.equal(buildRevealExtras(null), null);
+});
 
 test('mergePredictions keeps explicit predictions distinct from defaulted missing rows', () => {
   const rows = mergePredictions(

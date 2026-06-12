@@ -60,6 +60,40 @@ function mergePredictions(matches, predictions) {
   });
 }
 
+function buildRevealTeam(code, name) {
+  return {
+    code: code || '',
+    name: name || code || 'Não informado'
+  };
+}
+
+function buildRevealExtras(extraPrediction) {
+  if (!extraPrediction) {
+    return null;
+  }
+
+  return {
+    champion: buildRevealTeam(
+      extraPrediction.championTeamCode,
+      extraPrediction.championTeamName
+    ),
+    semiFinalists: [1, 2, 3, 4].map((index) =>
+      buildRevealTeam(
+        extraPrediction[`semiFinalist${index}Code`],
+        extraPrediction[`semiFinalist${index}Name`]
+      )
+    ),
+    topScorer: {
+      name: extraPrediction.topScorerName || 'Não informado',
+      goals:
+        extraPrediction.topScorerGoals === null ||
+        extraPrediction.topScorerGoals === undefined
+          ? null
+          : Number(extraPrediction.topScorerGoals)
+    }
+  };
+}
+
 async function getRevealState(session, selectedParticipantId) {
   const participant = participantService.getSessionParticipant(session);
 
@@ -102,14 +136,16 @@ async function getRevealState(session, selectedParticipantId) {
   const phasePayload = [];
 
   for (const phase of revealedPhases) {
-    const [matches, predictions] = await Promise.all([
+    const [matches, predictions, extraPrediction] = await Promise.all([
       competitionRepository.listCompetitionMatchesByPhaseId(phase.id),
-      predictionRepository.listParticipantPredictionsForPhase(selectedParticipant.id, phase.id)
+      predictionRepository.listParticipantPredictionsForPhase(selectedParticipant.id, phase.id),
+      predictionRepository.findExtraPredictionForPhase(selectedParticipant.id, phase.id)
     ]);
     const mergedMatches = mergePredictions(matches, predictions);
 
     phasePayload.push({
       phase,
+      extras: buildRevealExtras(extraPrediction),
       groups: buildGroups(mergedMatches),
       matches: mergedMatches
     });
@@ -126,6 +162,7 @@ async function getRevealState(session, selectedParticipantId) {
 
 module.exports = {
   buildGroups,
+  buildRevealExtras,
   getRevealState,
   mergePredictions
 };
