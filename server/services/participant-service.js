@@ -11,6 +11,8 @@ function mapParticipantToSession(participant) {
     nickname: participant.nickname,
     city: participant.city || '',
     avatarKey: participant.avatarKey,
+    currentPosition: participant.currentPosition,
+    lastPosition: participant.lastPosition,
     isAdmin: Boolean(participant.isAdmin)
   };
 }

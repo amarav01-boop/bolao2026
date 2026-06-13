@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const authService = require('./auth-service');
 const participantService = require('./participant-service');
 const predictionService = require('./prediction-service');
+const rankingService = require('./ranking-service');
 const competitionRepository = require('../repositories/competition-repository');
 
 const TEMPORARY_PASSWORD_CITIES = [
@@ -88,6 +89,26 @@ function normalizeOptionalText(value) {
 
   const text = String(value).trim();
   return text.length ? text : null;
+}
+
+function normalizeScore(value) {
+  return value === null || value === undefined || value === '' ? null : Number(value);
+}
+
+function hasScoringRelevantMatchChange(previousMatch, nextMatch) {
+  if (!previousMatch || !nextMatch) {
+    return Boolean(
+      nextMatch?.isPlayed &&
+      normalizeScore(nextMatch.resultHomeScore) !== null &&
+      normalizeScore(nextMatch.resultAwayScore) !== null
+    );
+  }
+
+  return (
+    Boolean(previousMatch.isPlayed) !== Boolean(nextMatch.isPlayed) ||
+    normalizeScore(previousMatch.resultHomeScore) !== normalizeScore(nextMatch.resultHomeScore) ||
+    normalizeScore(previousMatch.resultAwayScore) !== normalizeScore(nextMatch.resultAwayScore)
+  );
 }
 
 function pickDefined(value, fallback) {
@@ -202,6 +223,10 @@ async function createMatch(input) {
 
   if (match) {
     await predictionService.refreshMatchPredictionPoints(match.id);
+
+    if (hasScoringRelevantMatchChange(null, match)) {
+      await rankingService.recalculateRankingPositions({ forceSnapshot: true });
+    }
   }
 
   return match;
@@ -238,11 +263,21 @@ async function updateMatch(matchId, input) {
 
   await predictionService.refreshMatchPredictionPoints(matchId);
 
+  if (hasScoringRelevantMatchChange(existing, match)) {
+    await rankingService.recalculateRankingPositions({ forceSnapshot: true });
+  }
+
   return match;
 }
 
 async function recalculateRanking() {
-  return predictionService.recalculateRankingPoints();
+  const pointsResult = await predictionService.recalculateRankingPoints();
+  const positionResult = await rankingService.recalculateRankingPositions();
+
+  return {
+    ...pointsResult,
+    updatedParticipants: positionResult.updatedParticipants
+  };
 }
 
 function generateTemporaryPassword() {
@@ -281,5 +316,6 @@ module.exports = {
   setRegistrationState,
   updateMatch,
   updatePhase,
-  generateTemporaryPassword
+  generateTemporaryPassword,
+  hasScoringRelevantMatchChange
 };

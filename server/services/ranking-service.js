@@ -1,4 +1,5 @@
 const participantService = require('./participant-service');
+const participantRepository = require('../repositories/participant-repository');
 const competitionRepository = require('../repositories/competition-repository');
 const predictionRepository = require('../repositories/prediction-repository');
 const {
@@ -6,6 +7,68 @@ const {
   calculateGroupStandings,
   hasCompleteScores
 } = require('../utils/group-standings');
+
+function deriveRankingMovement({
+  currentPosition,
+  lastPosition,
+  rankingHasStarted = false
+}) {
+  const hasCurrentPosition = currentPosition !== null && currentPosition !== undefined;
+  const hasLastPosition = lastPosition !== null && lastPosition !== undefined;
+
+  if (!rankingHasStarted) {
+    return {
+      rankDelta: hasCurrentPosition && hasLastPosition ? Number(lastPosition) - Number(currentPosition) : null,
+      movement: hasCurrentPosition && hasLastPosition ? 'steady' : 'unknown',
+      statusChip: 'Aguardando início da copa'
+    };
+  }
+
+  if (!hasCurrentPosition || !hasLastPosition) {
+    return {
+      rankDelta: null,
+      movement: 'unknown',
+      statusChip: 'Histórico iniciando'
+    };
+  }
+
+  const rankDelta = Number(lastPosition) - Number(currentPosition);
+
+  if (rankDelta >= 5) {
+    return { rankDelta, movement: 'up', statusChip: 'Disparou' };
+  }
+
+  if (rankDelta >= 3) {
+    return { rankDelta, movement: 'up', statusChip: 'Arrancada' };
+  }
+
+  if (rankDelta >= 1) {
+    return { rankDelta, movement: 'up', statusChip: 'Em alta' };
+  }
+
+  if (rankDelta <= -3) {
+    return { rankDelta, movement: 'down', statusChip: 'Queda forte' };
+  }
+
+  if (rankDelta <= -1) {
+    return { rankDelta, movement: 'down', statusChip: 'Em queda' };
+  }
+
+  return { rankDelta: 0, movement: 'steady', statusChip: 'Estável' };
+}
+
+function shouldPersistRankingPositions(ranking = [], forceSnapshot = false) {
+  if (forceSnapshot) {
+    return true;
+  }
+
+  return ranking.some(
+    (participant) =>
+      participant.currentPosition === null ||
+      participant.currentPosition === undefined ||
+      Number(participant.currentPosition) !== Number(participant.rank)
+  );
+}
 
 function calculateDenseRanking(participants = [], predictions = [], bonusPoints = []) {
   const pointsByParticipantId = predictions.reduce((accumulator, prediction) => {
@@ -29,6 +92,8 @@ function calculateDenseRanking(participants = [], predictions = [], bonusPoints 
       nickname: participant.nickname,
       city: participant.city || '',
       avatarKey: participant.avatarKey,
+      currentPosition: participant.currentPosition,
+      lastPosition: participant.lastPosition,
       points: pointsByParticipantId.get(Number(participant.id)) || 0
     }))
     .sort((left, right) => {
@@ -41,6 +106,7 @@ function calculateDenseRanking(participants = [], predictions = [], bonusPoints 
 
   let currentRank = 0;
   let previousPoints = null;
+  const rankingHasStarted = ordered.some((participant) => participant.points > 0);
 
   return ordered.map((participant) => {
     if (previousPoints === null || participant.points !== previousPoints) {
@@ -51,8 +117,11 @@ function calculateDenseRanking(participants = [], predictions = [], bonusPoints 
     return {
       ...participant,
       rank: currentRank,
-      movement: 'steady',
-      statusChip: participant.points > 0 ? 'Em alta' : 'Aguardando início da copa'
+      ...deriveRankingMovement({
+        currentPosition: participant.currentPosition,
+        lastPosition: participant.lastPosition,
+        rankingHasStarted
+      })
     };
   });
 }
@@ -143,8 +212,25 @@ async function getRanking() {
   };
 }
 
+async function recalculateRankingPositions({ forceSnapshot = false } = {}) {
+  const rankingPayload = await getRanking();
+  const shouldPersist = shouldPersistRankingPositions(rankingPayload.ranking, forceSnapshot);
+  const updatedParticipants = shouldPersist
+    ? await participantRepository.updateRankingPositions(rankingPayload.ranking)
+    : 0;
+
+  return {
+    updatedParticipants,
+    snapshotCreated: shouldPersist,
+    ranking: rankingPayload.ranking
+  };
+}
+
 module.exports = {
   calculateGroupClassificationBonuses,
   calculateDenseRanking,
+  deriveRankingMovement,
+  recalculateRankingPositions,
+  shouldPersistRankingPositions,
   getRanking
 };
