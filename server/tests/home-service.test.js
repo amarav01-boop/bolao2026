@@ -101,6 +101,7 @@ test('buildDailyPredictionDistribution excludes matches already played today', (
 
 test('buildExactHitHighlights returns participants with exact scores for revealed completed matches', () => {
   const highlights = buildExactHitHighlights({
+    now: new Date('2026-06-20T20:00:00-03:00'),
     matches: [
       {
         id: 21,
@@ -134,8 +135,38 @@ test('buildExactHitHighlights returns participants with exact scores for reveale
   assert.deepEqual(highlights[0].score, { home: 3, away: 1 });
 });
 
+test('buildExactHitHighlights includes only matches from today and yesterday in Brasilia', () => {
+  const match = (id, kickoffAt) => ({
+    id,
+    homeTeamName: `Time ${id}A`,
+    awayTeamName: `Time ${id}B`,
+    kickoffAt,
+    isPlayed: true,
+    resultHomeScore: 1,
+    resultAwayScore: 0,
+    phaseRevealEnabled: true
+  });
+  const highlights = buildExactHitHighlights({
+    now: new Date('2026-06-20T12:00:00-03:00'),
+    matches: [
+      match(1, new Date('2026-06-20T00:05:00-03:00')),
+      match(2, new Date('2026-06-19T23:55:00-03:00')),
+      match(3, new Date('2026-06-18T23:59:00-03:00'))
+    ],
+    predictionsByMatch: new Map([
+      [1, [{ participantId: 7, predictedHomeScore: 1, predictedAwayScore: 0 }]],
+      [2, [{ participantId: 7, predictedHomeScore: 1, predictedAwayScore: 0 }]],
+      [3, [{ participantId: 7, predictedHomeScore: 1, predictedAwayScore: 0 }]]
+    ]),
+    participantsById: new Map([[7, { id: 7, nickname: 'Nego Veio' }]])
+  });
+
+  assert.deepEqual(highlights.map((highlight) => highlight.id), [1, 2]);
+});
+
 test('buildExactHitHighlights ignores unrevealed matches and returns an empty state', () => {
   const highlights = buildExactHitHighlights({
+    now: new Date('2026-06-20T12:00:00-03:00'),
     matches: [
       {
         id: 21,

@@ -141,13 +141,19 @@ function buildExactHitHighlights({
   matches = [],
   predictionsByMatch = new Map(),
   participantsById = new Map(),
-  maxMatches = 6
+  maxMatches = 6,
+  now = new Date()
 }) {
+  const todayKey = getBrazilDateKey(now);
+  const yesterdayKey = getBrazilDateKey(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const allowedDateKeys = new Set([todayKey, yesterdayKey]);
+
   return matches
     .filter(
       (match) =>
         match.isPlayed &&
         match.phaseRevealEnabled &&
+        allowedDateKeys.has(getBrazilDateKey(match.kickoffAt)) &&
         match.resultHomeScore !== null &&
         match.resultHomeScore !== undefined &&
         match.resultAwayScore !== null &&
@@ -201,8 +207,16 @@ async function loadDailyPredictionDistribution() {
 }
 
 async function loadExactHitHighlights() {
+  const now = new Date();
+  const todayKey = getBrazilDateKey(now);
+  const yesterdayKey = getBrazilDateKey(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const allowedDateKeys = new Set([todayKey, yesterdayKey]);
   const matches = (await competitionRepository.listPlayedCompetitionMatches())
-    .filter((match) => match.phaseRevealEnabled)
+    .filter(
+      (match) =>
+        match.phaseRevealEnabled &&
+        allowedDateKeys.has(getBrazilDateKey(match.kickoffAt))
+    )
     .sort((left, right) => new Date(right.kickoffAt || 0) - new Date(left.kickoffAt || 0))
     .slice(0, 8);
 
@@ -217,7 +231,7 @@ async function loadExactHitHighlights() {
   const predictionsByMatch = new Map(matches.map((match, index) => [match.id, predictionLists[index]]));
   const participantsById = new Map(participants.map((participant) => [Number(participant.id), participant]));
 
-  return buildExactHitHighlights({ matches, predictionsByMatch, participantsById });
+  return buildExactHitHighlights({ matches, predictionsByMatch, participantsById, now });
 }
 
 async function getHomeState(session) {
