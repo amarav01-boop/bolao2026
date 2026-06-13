@@ -2,12 +2,16 @@ import { renderAppShell } from '../components/app-shell.js';
 import { renderEmptyState } from '../components/empty-state.js';
 import { renderParticipantBadge } from '../components/participant-badge.js';
 import { renderParticipantNav } from '../components/participant-nav.js';
+import {
+  getRankingStatusChipClass,
+  renderRankingMovement
+} from '../components/ranking-row.js';
 import { renderStatusMessage } from '../components/status-message.js';
 import { escapeHtml } from '../utils/escape-html.js';
 
 const BRAND_LABEL = 'BOLÃO DA COPA 2026 - AMIGOS DA VILA OLÍMPIA';
 
-function renderRankingTable(ranking = [], currentParticipantId) {
+export function renderRankingTable(ranking = [], currentParticipantId) {
   if (!ranking.length) {
     return renderEmptyState({
       title: 'Ranking aguardando participantes',
@@ -23,6 +27,7 @@ function renderRankingTable(ranking = [], currentParticipantId) {
             <th>Posição</th>
             <th>Participante</th>
             <th>Pontos</th>
+            <th>Movimento</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -43,7 +48,14 @@ function renderRankingTable(ranking = [], currentParticipantId) {
                     })}
                   </td>
                   <td class="ranking-table__points">${escapeHtml(row.points)} pts</td>
-                  <td><span class="chip ${row.points > 0 ? 'chip--accent' : 'chip--danger'}">${escapeHtml(row.statusChip || 'Aguardando início da copa')}</span></td>
+                  <td class="ranking-table__movement">
+                    ${renderRankingMovement(row)}
+                  </td>
+                  <td>
+                    <span class="chip ${getRankingStatusChipClass(row.statusChip)}">
+                      ${escapeHtml(row.statusChip || 'Histórico iniciando')}
+                    </span>
+                  </td>
                 </tr>
               `;
             })

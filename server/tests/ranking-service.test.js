@@ -1,7 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { calculateDenseRanking } = require('../services/ranking-service');
+const {
+  calculateDenseRanking,
+  deriveRankingMovement,
+  shouldPersistRankingPositions
+} = require('../services/ranking-service');
 const { calculatePredictionPoints } = require('../services/prediction-service');
 
 test('calculateDenseRanking applies dense ranks and keeps all participants with zero points initially', () => {
@@ -70,6 +74,180 @@ test('calculateDenseRanking includes group classification bonus points', () => {
       { nickname: 'Ana', rank: 1, points: 8 },
       { nickname: 'Bia', rank: 2, points: 3 }
     ]
+  );
+});
+
+test('deriveRankingMovement keeps an existing ranking neutral before the first baseline recalculation', () => {
+  assert.deepEqual(
+    deriveRankingMovement({
+      currentPosition: null,
+      lastPosition: null,
+      points: 12,
+      rankingHasStarted: true
+    }),
+    {
+      rankDelta: null,
+      movement: 'unknown',
+      statusChip: 'Histórico iniciando'
+    }
+  );
+});
+
+test('deriveRankingMovement keeps the pre-competition state while everyone has zero points', () => {
+  assert.deepEqual(
+    deriveRankingMovement({
+      currentPosition: 1,
+      lastPosition: 1,
+      points: 0,
+      rankingHasStarted: false
+    }),
+    {
+      rankDelta: 0,
+      movement: 'steady',
+      statusChip: 'Aguardando início da copa'
+    }
+  );
+});
+
+test('deriveRankingMovement applies upward status thresholds', () => {
+  const cases = [
+    { lastPosition: 4, currentPosition: 3, statusChip: 'Em alta' },
+    { lastPosition: 5, currentPosition: 3, statusChip: 'Em alta' },
+    { lastPosition: 6, currentPosition: 3, statusChip: 'Arrancada' },
+    { lastPosition: 7, currentPosition: 3, statusChip: 'Arrancada' },
+    { lastPosition: 8, currentPosition: 3, statusChip: 'Disparou' }
+  ];
+
+  cases.forEach((entry) => {
+    const movement = deriveRankingMovement({
+      ...entry,
+      points: 10,
+      rankingHasStarted: true
+    });
+
+    assert.equal(movement.movement, 'up');
+    assert.equal(movement.rankDelta, entry.lastPosition - entry.currentPosition);
+    assert.equal(movement.statusChip, entry.statusChip);
+  });
+});
+
+test('deriveRankingMovement applies downward, steady, and unknown states', () => {
+  assert.deepEqual(
+    deriveRankingMovement({
+      currentPosition: 5,
+      lastPosition: 3,
+      points: 8,
+      rankingHasStarted: true
+    }),
+    { rankDelta: -2, movement: 'down', statusChip: 'Em queda' }
+  );
+  assert.deepEqual(
+    deriveRankingMovement({
+      currentPosition: 7,
+      lastPosition: 3,
+      points: 8,
+      rankingHasStarted: true
+    }),
+    { rankDelta: -4, movement: 'down', statusChip: 'Queda forte' }
+  );
+  assert.deepEqual(
+    deriveRankingMovement({
+      currentPosition: 2,
+      lastPosition: 2,
+      points: 8,
+      rankingHasStarted: true
+    }),
+    { rankDelta: 0, movement: 'steady', statusChip: 'Estável' }
+  );
+});
+
+test('calculateDenseRanking returns persisted position movement while preserving dense ties', () => {
+  const ranking = calculateDenseRanking(
+    [
+      {
+        id: 1,
+        username: 'ana@example.com',
+        nickname: 'Ana',
+        avatarKey: 'craque',
+        currentPosition: 1,
+        lastPosition: 3
+      },
+      {
+        id: 2,
+        username: 'bia@example.com',
+        nickname: 'Bia',
+        avatarKey: 'maestro',
+        currentPosition: 1,
+        lastPosition: 1
+      },
+      {
+        id: 3,
+        username: 'caio@example.com',
+        nickname: 'Caio',
+        avatarKey: 'bruxo',
+        currentPosition: 2,
+        lastPosition: 1
+      }
+    ],
+    [
+      { participantId: 1, pointsAwarded: 5 },
+      { participantId: 2, pointsAwarded: 5 },
+      { participantId: 3, pointsAwarded: 3 }
+    ]
+  );
+
+  assert.deepEqual(
+    ranking.map((row) => ({
+      rank: row.rank,
+      currentPosition: row.currentPosition,
+      lastPosition: row.lastPosition,
+      movement: row.movement,
+      statusChip: row.statusChip
+    })),
+    [
+      {
+        rank: 1,
+        currentPosition: 1,
+        lastPosition: 3,
+        movement: 'up',
+        statusChip: 'Em alta'
+      },
+      {
+        rank: 1,
+        currentPosition: 1,
+        lastPosition: 1,
+        movement: 'steady',
+        statusChip: 'Estável'
+      },
+      {
+        rank: 2,
+        currentPosition: 2,
+        lastPosition: 1,
+        movement: 'down',
+        statusChip: 'Em queda'
+      }
+    ]
+  );
+});
+
+test('shouldPersistRankingPositions preserves movement on no-op manual recalculation', () => {
+  const unchangedRanking = [
+    { id: 1, rank: 1, currentPosition: 1, lastPosition: 3 },
+    { id: 2, rank: 2, currentPosition: 2, lastPosition: 2 }
+  ];
+
+  assert.equal(shouldPersistRankingPositions(unchangedRanking), false);
+  assert.equal(shouldPersistRankingPositions(unchangedRanking, true), true);
+  assert.equal(
+    shouldPersistRankingPositions([
+      { id: 1, rank: 1, currentPosition: 1, lastPosition: 1 },
+      { id: 2, rank: 2, currentPosition: 4, lastPosition: 4 }
+    ]),
+    true
+  );
+  assert.equal(
+    shouldPersistRankingPositions([{ id: 1, rank: 1, currentPosition: null, lastPosition: null }]),
+    true
   );
 });
 

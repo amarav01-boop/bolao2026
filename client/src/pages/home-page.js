@@ -1,6 +1,10 @@
 import { renderAppShell } from '../components/app-shell.js';
 import { renderEmptyState } from '../components/empty-state.js';
 import { renderParticipantBadge } from '../components/participant-badge.js';
+import {
+  getRankingStatusChipClass,
+  renderRankingMovement
+} from '../components/ranking-row.js';
 import { renderParticipantNav } from '../components/participant-nav.js';
 import { renderStatusMessage } from '../components/status-message.js';
 import { escapeHtml } from '../utils/escape-html.js';
@@ -558,7 +562,7 @@ function renderPhaseOverviewCard(state, phase, summary, attention) {
   `;
 }
 
-function renderRankingQuickCard(homeState) {
+export function renderRankingQuickCard(homeState) {
   const currentParticipant = homeState?.rankingSnapshot?.currentParticipant;
 
   return `
@@ -579,9 +583,13 @@ function renderRankingQuickCard(homeState) {
                 <span class="scoreboard__label">Pontos</span>
                 <strong>${escapeHtml(currentParticipant.points)} pts</strong>
               </div>
+              <div class="scoreboard__item">
+                <span class="scoreboard__label">Movimento</span>
+                ${renderRankingMovement(currentParticipant)}
+              </div>
             </div>
             <div style="margin-top: 0.75rem">
-              <span class="chip ${currentParticipant.statusChip === 'Aguardando início da copa' ? 'chip--danger' : 'chip--accent'}">
+              <span class="chip ${getRankingStatusChipClass(currentParticipant.statusChip)}">
                 ${escapeHtml(currentParticipant.statusChip || 'Aguardando início da copa')}
               </span>
             </div>

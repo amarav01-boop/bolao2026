@@ -12,6 +12,14 @@ function mapParticipantRow(row) {
     nickname: row.nickname,
     city: row.city,
     avatarKey: row.avatar_key,
+    currentPosition:
+      row.current_position === null || row.current_position === undefined
+        ? null
+        : Number(row.current_position),
+    lastPosition:
+      row.last_position === null || row.last_position === undefined
+        ? null
+        : Number(row.last_position),
     isAdmin: Boolean(row.is_admin),
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -60,7 +68,8 @@ async function updateRegistrationSettings(isRegistrationOpen) {
 async function findParticipantByUsername(username) {
   const [rows] = await pool.query(
     `
-      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
+      SELECT id, username, password_hash, nickname, city, avatar_key, current_position, last_position,
+        is_admin, created_at, updated_at
       FROM participants
       WHERE username = ?
       LIMIT 1
@@ -74,7 +83,8 @@ async function findParticipantByUsername(username) {
 async function findParticipantByNickname(nickname) {
   const [rows] = await pool.query(
     `
-      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
+      SELECT id, username, password_hash, nickname, city, avatar_key, current_position, last_position,
+        is_admin, created_at, updated_at
       FROM participants
       WHERE nickname = ?
       LIMIT 1
@@ -88,7 +98,8 @@ async function findParticipantByNickname(nickname) {
 async function findParticipantById(participantId) {
   const [rows] = await pool.query(
     `
-      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
+      SELECT id, username, password_hash, nickname, city, avatar_key, current_position, last_position,
+        is_admin, created_at, updated_at
       FROM participants
       WHERE id = ?
       LIMIT 1
@@ -102,7 +113,8 @@ async function findParticipantById(participantId) {
 async function listPublicParticipants() {
   const [rows] = await pool.query(
     `
-      SELECT id, username, password_hash, nickname, city, avatar_key, is_admin, created_at, updated_at
+      SELECT id, username, password_hash, nickname, city, avatar_key, current_position, last_position,
+        is_admin, created_at, updated_at
       FROM participants
       WHERE is_admin = 0
       ORDER BY nickname ASC, id ASC
@@ -123,6 +135,38 @@ async function updateParticipantPasswordHash(participantId, passwordHash) {
   );
 
   return findParticipantById(participantId);
+}
+
+async function updateRankingPositions(ranking = []) {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    for (const participant of ranking) {
+      await connection.query(
+        `
+          UPDATE participants
+          SET
+            last_position = CASE
+              WHEN current_position IS NULL THEN ?
+              ELSE current_position
+            END,
+            current_position = ?
+          WHERE id = ? AND is_admin = 0
+        `,
+        [participant.rank, participant.rank, participant.id]
+      );
+    }
+
+    await connection.commit();
+    return ranking.length;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 async function createParticipant({ username, passwordHash, nickname, city, avatarKey }) {
@@ -146,6 +190,8 @@ async function createParticipant({ username, passwordHash, nickname, city, avata
     nickname,
     city,
     avatar_key: avatarKey,
+    current_position: null,
+    last_position: null,
     is_admin: 0,
     created_at: new Date(),
     updated_at: new Date()
@@ -160,6 +206,7 @@ module.exports = {
   getRegistrationSettings,
   listPublicParticipants,
   updateParticipantPasswordHash,
+  updateRankingPositions,
   updateRegistrationSettings,
   mapParticipantRow,
   mapRegistrationSettingsRow
