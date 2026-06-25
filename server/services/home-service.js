@@ -88,13 +88,17 @@ function calculatePercentages(counts) {
 function isDailyDistributionMatch(match, todayKey) {
   return (
     match.phaseRevealEnabled &&
-    match.phaseWindowState !== 'open' &&
     !match.isPlayed &&
     getBrazilDateKey(match.kickoffAt) === todayKey
   );
 }
 
-function buildDailyPredictionDistribution({ matches = [], predictionsByMatch = new Map(), now = new Date() }) {
+function buildDailyPredictionDistribution({
+  matches = [],
+  predictionsByMatch = new Map(),
+  participantId = null,
+  now = new Date()
+}) {
   const todayKey = getBrazilDateKey(now);
   const relevantMatches = matches.filter((match) => isDailyDistributionMatch(match, todayKey));
 
@@ -124,6 +128,9 @@ function buildDailyPredictionDistribution({ matches = [], predictionsByMatch = n
         },
         { homeWin: 0, draw: 0, awayWin: 0, total: 0 }
       );
+      const participantPrediction = participantId
+        ? predictions.find((prediction) => Number(prediction.participantId) === Number(participantId)) || null
+        : null;
 
       return {
         id: match.id,
@@ -131,7 +138,15 @@ function buildDailyPredictionDistribution({ matches = [], predictionsByMatch = n
         awayTeamName: match.awayTeamName,
         kickoffAt: match.kickoffAt,
         counts,
-        percentages: calculatePercentages(counts)
+        percentages: calculatePercentages(counts),
+        publicDistributionVisible: match.phaseWindowState !== 'open',
+        participantPrediction: participantPrediction
+          ? {
+              homeScore: participantPrediction.predictedHomeScore,
+              awayScore: participantPrediction.predictedAwayScore,
+              isDefaulted: Boolean(participantPrediction.isDefaulted)
+            }
+          : null
       };
     })
   };
@@ -192,7 +207,7 @@ function buildExactHitHighlights({
     .slice(0, maxMatches);
 }
 
-async function loadDailyPredictionDistribution() {
+async function loadDailyPredictionDistribution(participantId = null) {
   const matches = await competitionRepository.listCompetitionMatches();
   const todayKey = getBrazilDateKey(new Date());
   const relevantMatches = matches.filter((match) => isDailyDistributionMatch(match, todayKey));
@@ -203,7 +218,7 @@ async function loadDailyPredictionDistribution() {
     relevantMatches.map((match, index) => [match.id, predictionLists[index]])
   );
 
-  return buildDailyPredictionDistribution({ matches, predictionsByMatch });
+  return buildDailyPredictionDistribution({ matches, predictionsByMatch, participantId });
 }
 
 async function loadExactHitHighlights() {
@@ -244,7 +259,7 @@ async function getHomeState(session) {
   const [phase, rankingPayload, dailyPredictionDistribution, exactHitHighlights] = await Promise.all([
     competitionRepository.findCurrentCompetitionPhase(),
     rankingService.getRanking(),
-    loadDailyPredictionDistribution(),
+    loadDailyPredictionDistribution(participant.id),
     loadExactHitHighlights()
   ]);
   const ranking = rankingPayload.ranking;
