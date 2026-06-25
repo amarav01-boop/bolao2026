@@ -647,6 +647,49 @@ function formatMatchTime(value) {
 function renderDailyPredictionDistribution(homeState) {
   const distribution = homeState?.dailyPredictionDistribution;
 
+  function renderParticipantPrediction(match) {
+    if (!match.participantPrediction) {
+      return '<p class="daily-distribution-match__prediction">Seu palpite: ainda não preenchido</p>';
+    }
+
+    return `
+      <p class="daily-distribution-match__prediction">
+        Seu palpite: <strong>${escapeHtml(match.participantPrediction.homeScore)} x ${escapeHtml(match.participantPrediction.awayScore)}</strong>
+      </p>
+    `;
+  }
+
+  function renderPublicDistribution(match) {
+    if (!match.publicDistributionVisible) {
+      return `
+        <div class="daily-distribution-note">
+          <strong>Comparação pública ainda travada</strong>
+          <span>Os percentuais da turma aparecem depois que a janela de palpites fecha.</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="daily-distribution-grid">
+        <div class="daily-distribution-option daily-distribution-option--home">
+          <span class="daily-distribution-option__label">${escapeHtml(match.homeTeamName)}</span>
+          <strong>${escapeHtml(match.percentages.homeWin)}%</strong>
+          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.homeWin}%"></span>
+        </div>
+        <div class="daily-distribution-option daily-distribution-option--draw">
+          <span class="daily-distribution-option__label">Empate</span>
+          <strong>${escapeHtml(match.percentages.draw)}%</strong>
+          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.draw}%"></span>
+        </div>
+        <div class="daily-distribution-option daily-distribution-option--away">
+          <span class="daily-distribution-option__label">${escapeHtml(match.awayTeamName)}</span>
+          <strong>${escapeHtml(match.percentages.awayWin)}%</strong>
+          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.awayWin}%"></span>
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <section class="panel home-insight-card">
       <div class="panel__header">
@@ -668,24 +711,9 @@ function renderDailyPredictionDistribution(homeState) {
                         <strong>${escapeHtml(match.homeTeamName)} x ${escapeHtml(match.awayTeamName)}</strong>
                         <span>${escapeHtml(formatMatchTime(match.kickoffAt))}</span>
                       </div>
-                      <div class="daily-distribution-grid">
-                        <div class="daily-distribution-option daily-distribution-option--home">
-                          <span class="daily-distribution-option__label">${escapeHtml(match.homeTeamName)}</span>
-                          <strong>${escapeHtml(match.percentages.homeWin)}%</strong>
-                          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.homeWin}%"></span>
-                        </div>
-                        <div class="daily-distribution-option daily-distribution-option--draw">
-                          <span class="daily-distribution-option__label">Empate</span>
-                          <strong>${escapeHtml(match.percentages.draw)}%</strong>
-                          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.draw}%"></span>
-                        </div>
-                        <div class="daily-distribution-option daily-distribution-option--away">
-                          <span class="daily-distribution-option__label">${escapeHtml(match.awayTeamName)}</span>
-                          <strong>${escapeHtml(match.percentages.awayWin)}%</strong>
-                          <span class="daily-distribution-option__bar" style="--distribution-width:${match.percentages.awayWin}%"></span>
-                        </div>
-                      </div>
+                      ${renderPublicDistribution(match)}
                       <p class="daily-distribution-match__total">${escapeHtml(match.counts.total)} palpites contabilizados</p>
+                      ${renderParticipantPrediction(match)}
                     </article>
                   `
                 )

@@ -31,6 +31,7 @@ test('buildAttentionMessage shows neutral waiting state when phase is not open',
 test('buildDailyPredictionDistribution counts regular and defaulted predictions', () => {
   const distribution = buildDailyPredictionDistribution({
     now: new Date('2026-06-11T15:00:00-03:00'),
+    participantId: 7,
     matches: [
       {
         id: 10,
@@ -46,6 +47,7 @@ test('buildDailyPredictionDistribution counts regular and defaulted predictions'
       [
         10,
         [
+          { participantId: 7, predictedHomeScore: 2, predictedAwayScore: 1, isDefaulted: false },
           { predictedHomeScore: 2, predictedAwayScore: 0, isDefaulted: false },
           { predictedHomeScore: 1, predictedAwayScore: 0, isDefaulted: false },
           { predictedHomeScore: 0, predictedAwayScore: 0, isDefaulted: true },
@@ -57,8 +59,40 @@ test('buildDailyPredictionDistribution counts regular and defaulted predictions'
 
   assert.equal(distribution.available, true);
   assert.equal(distribution.matches.length, 1);
-  assert.deepEqual(distribution.matches[0].counts, { homeWin: 2, draw: 1, awayWin: 1, total: 4 });
-  assert.deepEqual(distribution.matches[0].percentages, { homeWin: 50, draw: 25, awayWin: 25 });
+  assert.deepEqual(distribution.matches[0].counts, { homeWin: 3, draw: 1, awayWin: 1, total: 5 });
+  assert.deepEqual(distribution.matches[0].percentages, { homeWin: 60, draw: 20, awayWin: 20 });
+  assert.deepEqual(distribution.matches[0].participantPrediction, {
+    homeScore: 2,
+    awayScore: 1,
+    isDefaulted: false
+  });
+  assert.equal(distribution.matches[0].publicDistributionVisible, true);
+});
+
+test('buildDailyPredictionDistribution keeps open matches visible but hides public comparison', () => {
+  const distribution = buildDailyPredictionDistribution({
+    now: new Date('2026-06-11T15:00:00-03:00'),
+    matches: [
+      {
+        id: 10,
+        kickoffAt: new Date('2026-06-11T19:00:00-03:00'),
+        phaseWindowState: 'open',
+        phaseRevealEnabled: true,
+        isPlayed: false
+      }
+    ],
+    predictionsByMatch: new Map([[10, [{ participantId: 7, predictedHomeScore: 1, predictedAwayScore: 0 }]]]),
+    participantId: 7
+  });
+
+  assert.equal(distribution.available, true);
+  assert.equal(distribution.matches.length, 1);
+  assert.equal(distribution.matches[0].publicDistributionVisible, false);
+  assert.deepEqual(distribution.matches[0].participantPrediction, {
+    homeScore: 1,
+    awayScore: 0,
+    isDefaulted: false
+  });
 });
 
 test('buildDailyPredictionDistribution hides matches whose predictions are not revealed', () => {

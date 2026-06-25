@@ -309,13 +309,42 @@ h1 {
 }
 
 .daily-distribution-match__header span,
-.daily-distribution-match__total {
+.daily-distribution-match__total,
+.daily-distribution-match__prediction {
   color: var(--text-muted);
   font-size: 0.78rem;
 }
 
 .daily-distribution-match__total {
   margin: 0;
+}
+
+.daily-distribution-match__prediction {
+  margin: -0.15rem 0 0;
+}
+
+.daily-distribution-match__prediction strong {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.daily-distribution-note {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.daily-distribution-note strong {
+  color: var(--text-main);
+  font-size: 0.82rem;
+}
+
+.daily-distribution-note span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
 }
 
 .daily-distribution-grid {
