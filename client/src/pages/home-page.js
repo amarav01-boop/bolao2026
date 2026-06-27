@@ -201,6 +201,10 @@ function renderGroupClassificationSummary(group, predictedStandings, realStandin
 }
 
 function renderGroupStandingsPreview(state, group) {
+  if (group.code === 'G32') {
+    return '';
+  }
+
   const matches = group.matches || [];
   const predictedStandings = calculateGroupStandings(matches, (match) => {
     const draft = getPredictionDraft(state, match.id);
