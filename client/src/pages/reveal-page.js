@@ -93,7 +93,23 @@ function renderStandingsTable(standings = []) {
   `;
 }
 
-function renderRevealedGroupStandings(group) {
+function shouldShowClassificationCard(phase) {
+  return phase?.stageType === 'group';
+}
+
+function getRevealPhasePriority(phase) {
+  if (phase?.code === 'second-round' || phase?.name === 'Fase Segunda Rodada') {
+    return 0;
+  }
+
+  return 1;
+}
+
+function renderRevealedGroupStandings(group, showClassification = true) {
+  if (!showClassification) {
+    return '';
+  }
+
   const matches = group.matches || [];
   const predictedStandings = calculateGroupStandings(matches, (match) => ({
     homeScore: match.predictionHomeScore,
@@ -122,20 +138,24 @@ function renderRevealedGroupStandings(group) {
         <span class="chip">${escapeHtml(group.label)}</span>
       </div>
       ${renderStandingsTable(predictedStandings)}
-      <div class="group-classification-summary">
-        <div>
-          <strong>Ordem pelo palpite</strong>
-          <span>${escapeHtml(predictedOrder || 'Sem palpites suficientes.')}</span>
-        </div>
-        <div>
-          <strong>Ordem real do grupo</strong>
-          <span>${realOrder ? escapeHtml(realOrder) : 'Aguardando gabarito completo do grupo.'}</span>
-        </div>
-        <div>
-          <strong>Pontos classificação grupo</strong>
-          <span>${classificationPoints === null ? 'Aguardando fechamento' : `${escapeHtml(classificationPoints)} pts`}</span>
-        </div>
-      </div>
+      ${showClassification
+        ? `
+          <div class="group-classification-summary">
+            <div>
+              <strong>Ordem pelo palpite</strong>
+              <span>${escapeHtml(predictedOrder || 'Sem palpites suficientes.')}</span>
+            </div>
+            <div>
+              <strong>Ordem real do grupo</strong>
+              <span>${realOrder ? escapeHtml(realOrder) : 'Aguardando gabarito completo do grupo.'}</span>
+            </div>
+            <div>
+              <strong>Pontos classificação grupo</strong>
+              <span>${classificationPoints === null ? 'Aguardando fechamento' : `${escapeHtml(classificationPoints)} pts`}</span>
+            </div>
+          </div>
+        `
+        : ''}
     </section>
   `;
 }
@@ -198,7 +218,20 @@ function renderRevealedPhases(revealState) {
     });
   }
 
-  return revealState.phases
+  return [...revealState.phases]
+    .sort((left, right) => {
+      const priorityDiff = getRevealPhasePriority(left.phase) - getRevealPhasePriority(right.phase);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      const sortOrderDiff = Number(left.phase?.sortOrder || 0) - Number(right.phase?.sortOrder || 0);
+      if (sortOrderDiff !== 0) {
+        return sortOrderDiff;
+      }
+
+      return Number(left.phase?.id || 0) - Number(right.phase?.id || 0);
+    })
     .map(
       (phasePayload) => `
         <section class="panel panel--span-12">
@@ -213,7 +246,7 @@ function renderRevealedPhases(revealState) {
                 (group) => `
                   <section class="revealed-group">
                     <h3>${escapeHtml(group.label)}</h3>
-                    ${renderRevealedGroupStandings(group)}
+                    ${renderRevealedGroupStandings(group, shouldShowClassificationCard(phasePayload.phase))}
                     <div class="revealed-prediction-list">
                       ${renderPredictionRows(group.matches)}
                     </div>
