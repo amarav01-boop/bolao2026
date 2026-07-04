@@ -97,12 +97,54 @@ function shouldShowClassificationCard(phase) {
   return phase?.stageType === 'group';
 }
 
+function normalizeRevealText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function isRoundOf16Phase(phase) {
+  const haystack = [
+    phase?.code,
+    phase?.name,
+    phase?.roundLabel
+  ]
+    .map(normalizeRevealText)
+    .join(' ');
+
+  return (
+    haystack.includes('round of 16') ||
+    haystack.includes('oitavas de final') ||
+    haystack.includes('oitavas')
+  );
+}
+
+function isSecondRoundPhase(phase) {
+  const haystack = [
+    phase?.code,
+    phase?.name,
+    phase?.roundLabel
+  ]
+    .map(normalizeRevealText)
+    .join(' ');
+
+  return (
+    haystack.includes('second round') ||
+    haystack.includes('segunda rodada')
+  );
+}
+
 function getRevealPhasePriority(phase) {
-  if (phase?.code === 'second-round' || phase?.name === 'Fase Segunda Rodada') {
+  if (isRoundOf16Phase(phase)) {
     return 0;
   }
 
-  return 1;
+  if (isSecondRoundPhase(phase)) {
+    return 1;
+  }
+
+  return 2;
 }
 
 function renderRevealedGroupStandings(group, showClassification = true) {
