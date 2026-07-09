@@ -120,6 +120,23 @@ function isRoundOf16Phase(phase) {
   );
 }
 
+function isRoundOf8Phase(phase) {
+  const haystack = [
+    phase?.code,
+    phase?.name,
+    phase?.roundLabel
+  ]
+    .map(normalizeRevealText)
+    .join(' ');
+
+  return (
+    haystack.includes('round of 8') ||
+    haystack.includes('quarterfinal') ||
+    haystack.includes('quartas de final') ||
+    haystack.includes('quartas')
+  );
+}
+
 function isSecondRoundPhase(phase) {
   const haystack = [
     phase?.code,
@@ -136,15 +153,19 @@ function isSecondRoundPhase(phase) {
 }
 
 function getRevealPhasePriority(phase) {
-  if (isRoundOf16Phase(phase)) {
+  if (isRoundOf8Phase(phase)) {
     return 0;
   }
 
-  if (isSecondRoundPhase(phase)) {
+  if (isRoundOf16Phase(phase)) {
     return 1;
   }
 
-  return 2;
+  if (isSecondRoundPhase(phase)) {
+    return 2;
+  }
+
+  return 3;
 }
 
 function renderRevealedGroupStandings(group, showClassification = true) {
