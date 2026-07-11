@@ -153,26 +153,26 @@ async function findExtraPredictionForPhase(participantId, phaseId) {
   const [rows] = await pool.query(
     `
       SELECT
-        id,
-        participant_id,
-        phase_id,
-        champion_team_code,
-        champion_team_name,
-        top_scorer_name,
-        top_scorer_goals,
-        semi_finalist_1_team_code,
-        semi_finalist_1_team_name,
-        semi_finalist_2_team_code,
-        semi_finalist_2_team_name,
-        semi_finalist_3_team_code,
-        semi_finalist_3_team_name,
-        semi_finalist_4_team_code,
-        semi_finalist_4_team_name,
-        points_awarded,
-        created_at,
-        updated_at
-      FROM competition_extra_predictions
-      WHERE participant_id = ? AND phase_id = ?
+        extras.id,
+        extras.participant_id,
+        extras.phase_id,
+        extras.champion_team_code,
+        extras.champion_team_name,
+        extras.top_scorer_name,
+        extras.top_scorer_goals,
+        extras.semi_finalist_1_team_code,
+        extras.semi_finalist_1_team_name,
+        extras.semi_finalist_2_team_code,
+        extras.semi_finalist_2_team_name,
+        extras.semi_finalist_3_team_code,
+        extras.semi_finalist_3_team_name,
+        extras.semi_finalist_4_team_code,
+        extras.semi_finalist_4_team_name,
+        extras.points_awarded,
+        extras.created_at,
+        extras.updated_at
+      FROM competition_extra_predictions extras
+      WHERE extras.participant_id = ? AND extras.phase_id = ?
       LIMIT 1
     `,
     [participantId, phaseId]
@@ -185,28 +185,28 @@ async function listAllExtraPredictions() {
   const [rows] = await pool.query(
     `
       SELECT
-        id,
-        participant_id,
-        phase_id,
-        champion_team_code,
-        champion_team_name,
-        top_scorer_name,
-        top_scorer_goals,
-        semi_finalist_1_team_code,
-        semi_finalist_1_team_name,
-        semi_finalist_2_team_code,
-        semi_finalist_2_team_name,
-        semi_finalist_3_team_code,
-        semi_finalist_3_team_name,
-        semi_finalist_4_team_code,
-        semi_finalist_4_team_name,
-        points_awarded,
-        created_at,
-        updated_at
+        extras.id,
+        extras.participant_id,
+        extras.phase_id,
+        extras.champion_team_code,
+        extras.champion_team_name,
+        extras.top_scorer_name,
+        extras.top_scorer_goals,
+        extras.semi_finalist_1_team_code,
+        extras.semi_finalist_1_team_name,
+        extras.semi_finalist_2_team_code,
+        extras.semi_finalist_2_team_name,
+        extras.semi_finalist_3_team_code,
+        extras.semi_finalist_3_team_name,
+        extras.semi_finalist_4_team_code,
+        extras.semi_finalist_4_team_name,
+        extras.points_awarded,
+        extras.created_at,
+        extras.updated_at
       FROM competition_extra_predictions extras
       INNER JOIN competition_phases phases ON phases.id = extras.phase_id
       WHERE phases.code = 'group-stage'
-      ORDER BY participant_id ASC, phase_id ASC
+      ORDER BY extras.participant_id ASC, extras.phase_id ASC
     `
   );
 
