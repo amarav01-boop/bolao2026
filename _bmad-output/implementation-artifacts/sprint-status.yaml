@@ -1,5 +1,5 @@
 # generated: 2026-05-23
-# last_updated: 2026-06-13
+# last_updated: 2026-07-11
 # project: bolao2026
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-23
-last_updated: 2026-06-13
+last_updated: 2026-07-11
 project: bolao2026
 project_key: NOKEY
 tracking_system: file-system
@@ -72,6 +72,7 @@ development_status:
   4-3-ranking-recalculation: review
   4-4-result-correction-and-ranking-notice: backlog
   4-5-admin-rule-and-dispute-notes: backlog
+  4-6-semifinal-answer-key-scoring: review
   epic-4-retrospective: optional
 
   epic-5: in-progress

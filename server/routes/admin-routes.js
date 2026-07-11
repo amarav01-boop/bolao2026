@@ -12,7 +12,8 @@ const {
   matchUpdateSchema,
   phaseBaseSchema,
   phaseUpdateSchema,
-  registrationStateSchema
+  registrationStateSchema,
+  semifinalAnswerKeySchema
 } = require('../schemas/admin-schemas');
 
 const env = loadEnv();
@@ -150,6 +151,25 @@ router.post(
   requireAdmin,
   asyncRoute(async (req, res) => {
     const result = await adminService.recalculateRanking();
+    return res.json(successResponse(result));
+  })
+);
+
+router.get(
+  '/semifinal-answer-key',
+  requireAdmin,
+  asyncRoute(async (req, res) => {
+    const answerKey = await adminService.getSemifinalAnswerKey();
+    return res.json(successResponse({ answerKey }));
+  })
+);
+
+router.put(
+  '/semifinal-answer-key',
+  requireAdmin,
+  validate(semifinalAnswerKeySchema),
+  asyncRoute(async (req, res) => {
+    const result = await adminService.saveSemifinalAnswerKey(req.body);
     return res.json(successResponse(result));
   })
 );

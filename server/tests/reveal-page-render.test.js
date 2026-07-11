@@ -11,7 +11,8 @@ test('renderRevealExtras shows all extras without editable controls', async () =
       { code: 'ARG', name: 'Argentina' },
       { code: 'ESP', name: 'Espanha' }
     ],
-    topScorer: { name: 'Vinicius Junior', goals: 7 }
+    topScorer: { name: 'Vinicius Junior', goals: 7 },
+    pointsAwarded: 35
   });
 
   assert.match(html, /Campeão da Copa/u);
@@ -19,5 +20,6 @@ test('renderRevealExtras shows all extras without editable controls', async () =
   assert.match(html, /Artilheiro/u);
   assert.match(html, /Número de gols/u);
   assert.match(html, /Vinicius Junior/u);
+  assert.match(html, /35 pts nos extras/u);
   assert.doesNotMatch(html, /<input|<select|<textarea/u);
 });

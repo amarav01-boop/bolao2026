@@ -70,6 +70,17 @@ export function recalculateAdminRanking() {
   });
 }
 
+export function getSemifinalAnswerKey() {
+  return fetchJson('/api/admin/semifinal-answer-key');
+}
+
+export function saveSemifinalAnswerKey(payload) {
+  return fetchJson('/api/admin/semifinal-answer-key', {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  });
+}
+
 export function resetAdminParticipantPassword(participantId) {
   return fetchJson(`/api/admin/participants/${participantId}/password-reset`, {
     method: 'POST'

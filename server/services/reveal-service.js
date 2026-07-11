@@ -73,6 +73,9 @@ function buildRevealExtras(extraPrediction) {
   }
 
   return {
+    pointsAwarded: Number.isFinite(Number(extraPrediction.pointsAwarded))
+      ? Number(extraPrediction.pointsAwarded)
+      : null,
     champion: buildRevealTeam(
       extraPrediction.championTeamCode,
       extraPrediction.championTeamName

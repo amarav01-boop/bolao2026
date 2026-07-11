@@ -70,7 +70,7 @@ function shouldPersistRankingPositions(ranking = [], forceSnapshot = false) {
   );
 }
 
-function calculateDenseRanking(participants = [], predictions = [], bonusPoints = []) {
+function calculateDenseRanking(participants = [], predictions = [], bonusPoints = [], extraPredictionPoints = []) {
   const pointsByParticipantId = predictions.reduce((accumulator, prediction) => {
     const participantId = Number(prediction.participantId);
     const points = prediction.pointsAwarded === null || prediction.pointsAwarded === undefined ? 0 : Number(prediction.pointsAwarded);
@@ -80,6 +80,12 @@ function calculateDenseRanking(participants = [], predictions = [], bonusPoints 
   }, new Map());
 
   bonusPoints.forEach((bonus) => {
+    const participantId = Number(bonus.participantId);
+    const points = bonus.pointsAwarded === null || bonus.pointsAwarded === undefined ? 0 : Number(bonus.pointsAwarded);
+    pointsByParticipantId.set(participantId, (pointsByParticipantId.get(participantId) || 0) + points);
+  });
+
+  extraPredictionPoints.forEach((bonus) => {
     const participantId = Number(bonus.participantId);
     const points = bonus.pointsAwarded === null || bonus.pointsAwarded === undefined ? 0 : Number(bonus.pointsAwarded);
     pointsByParticipantId.set(participantId, (pointsByParticipantId.get(participantId) || 0) + points);
@@ -201,13 +207,14 @@ async function calculateGroupClassificationBonuses(participants = []) {
 
 async function getRanking() {
   const participants = await participantService.listPublicParticipants();
-  const [predictions, groupClassificationBonuses] = await Promise.all([
+  const [predictions, groupClassificationBonuses, extraPredictionPoints] = await Promise.all([
     predictionRepository.listAllPredictions(),
-    calculateGroupClassificationBonuses(participants)
+    calculateGroupClassificationBonuses(participants),
+    predictionRepository.listAllExtraPredictions()
   ]);
 
   return {
-    ranking: calculateDenseRanking(participants, predictions, groupClassificationBonuses),
+    ranking: calculateDenseRanking(participants, predictions, groupClassificationBonuses, extraPredictionPoints),
     generatedAt: new Date().toISOString()
   };
 }

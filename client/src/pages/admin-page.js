@@ -503,6 +503,68 @@ function renderMatchForm(state) {
   `;
 }
 
+function renderSemifinalAnswerKeyForm(state) {
+  const teamOptions = collectTeamOptions(state.adminOverview?.matches || []);
+  const answerKey = state.adminForms.semifinalAnswerKey || {};
+  const teamCodes = answerKey.teamCodes || ['', '', '', ''];
+
+  return `
+    <section class="panel semifinal-answer-key-card">
+      <div class="panel__header">
+        <div>
+          <p class="panel__label">Gabarito dos palpites extras</p>
+          <p class="semifinal-answer-key-card__help">Campeao, semifinalistas e artilheiro somam ate 45 pontos.</p>
+        </div>
+        <span class="chip">Ate 45 pontos</span>
+      </div>
+      <form class="auth-form" data-admin-semifinal-answer-key-form>
+        ${state.adminSemifinalAnswerKeyMessage
+          ? renderStatusMessage(state.adminSemifinalAnswerKeyMessage)
+          : ''}
+        <div class="semifinal-answer-key-grid">
+          ${renderTeamSelectField({
+            id: 'extra-answer-key-champion',
+            name: 'championTeamCode',
+            label: 'Campeao da Copa - 10 pts',
+            value: answerKey.championTeamCode || '',
+            options: teamOptions,
+            disabled: state.isSavingSemifinalAnswerKey
+          })}
+          ${teamCodes.map((code, index) => renderTeamSelectField({
+            id: `semifinal-answer-key-${index + 1}`,
+            name: `teamCode${index + 1}`,
+            label: `Semifinalista ${index + 1} - 5 pts`,
+            value: code,
+            options: teamOptions,
+            disabled: state.isSavingSemifinalAnswerKey
+          }).replace('data-admin-input', `data-admin-input data-semifinal-index="${index}"`)).join('')}
+          ${renderFormField({
+            id: 'extra-answer-key-scorer',
+            name: 'topScorerName',
+            label: 'Artilheiro - 10 pts',
+            value: answerKey.topScorerName || '',
+            placeholder: 'Nome oficial do jogador',
+            disabled: state.isSavingSemifinalAnswerKey
+          })}
+          ${renderFormField({
+            id: 'extra-answer-key-goals',
+            name: 'topScorerGoals',
+            label: 'Gols do artilheiro - 5 pts',
+            type: 'number',
+            value: answerKey.topScorerGoals ?? '',
+            disabled: state.isSavingSemifinalAnswerKey
+          })}
+        </div>
+        <div class="form-actions">
+          <button class="btn btn--primary" type="submit" ${state.isSavingSemifinalAnswerKey || teamOptions.length < 4 ? 'disabled' : ''}>
+            ${state.isSavingSemifinalAnswerKey ? 'Salvando e pontuando...' : 'Salvar gabarito dos extras'}
+          </button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
 function renderPhasesTable(phases = []) {
   if (!phases.length) {
     return renderEmptyState({
@@ -854,6 +916,8 @@ export function renderAdminDashboardPage(state) {
           ${state.isRecalculatingRanking ? 'Recalculando...' : 'Recalcular ranking'}
         </button>
       </div>
+      ${renderSemifinalAnswerKeyForm(state)}
+      <div style="height: 1rem"></div>
       ${renderMatchForm(state)}
       <div style="height: 1rem"></div>
       ${renderMatchFilters(state)}

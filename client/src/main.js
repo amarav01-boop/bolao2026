@@ -18,11 +18,13 @@ import {
   createAdminPhase,
   getAdminOverview,
   getAdminSession,
+  getSemifinalAnswerKey,
   loginAdmin,
   logoutAdmin,
   recalculateAdminRanking,
   resetAdminParticipantPassword,
   saveRegistrationState,
+  saveSemifinalAnswerKey,
   updateAdminMatch,
   updateAdminPhase
 } from './api/admin-api.js';
@@ -103,6 +105,30 @@ function createDefaultMatchForm() {
   };
 }
 
+function createDefaultExtraAnswerKeyForm() {
+  return {
+    championTeamCode: '',
+    teamCodes: ['', '', '', ''],
+    topScorerName: '',
+    topScorerGoals: ''
+  };
+}
+
+function normalizeExtraAnswerKeyForm(answerKey) {
+  if (!answerKey) {
+    return createDefaultExtraAnswerKeyForm();
+  }
+
+  return {
+    championTeamCode: answerKey.championTeamCode || '',
+    teamCodes: answerKey.teamCodes || ['', '', '', ''],
+    topScorerName: answerKey.topScorerName || '',
+    topScorerGoals: answerKey.topScorerGoals === null || answerKey.topScorerGoals === undefined
+      ? ''
+      : String(answerKey.topScorerGoals)
+  };
+}
+
 const state = {
   route: getInitialRoute(),
   connection: 'loading',
@@ -119,6 +145,7 @@ const state = {
   isSavingRegistration: false,
   isSavingPhase: false,
   isSavingMatch: false,
+  isSavingSemifinalAnswerKey: false,
   isRecalculatingRanking: false,
   isResettingParticipantPassword: false,
   resettingParticipantId: null,
@@ -146,6 +173,7 @@ const state = {
   adminLoginFormError: null,
   adminPhaseFormError: null,
   adminMatchFormError: null,
+  adminSemifinalAnswerKeyMessage: null,
   adminMatchFilters: {
     phaseId: 'all',
     groupCode: 'all'
@@ -200,7 +228,8 @@ const state = {
   adminForms: {
     registrationState: true,
     phase: createDefaultPhaseForm(),
-    match: createDefaultMatchForm()
+    match: createDefaultMatchForm(),
+    semifinalAnswerKey: createDefaultExtraAnswerKeyForm()
   }
 };
 
@@ -795,8 +824,12 @@ async function savePredictionWorkspace() {
 }
 
 async function refreshAdminOverview() {
-  const response = await getAdminOverview();
-  state.adminOverview = response.data;
+  const [overviewResponse, answerKeyResponse] = await Promise.all([
+    getAdminOverview(),
+    getSemifinalAnswerKey()
+  ]);
+  state.adminOverview = overviewResponse.data;
+  state.adminForms.semifinalAnswerKey = normalizeExtraAnswerKeyForm(answerKeyResponse.data.answerKey);
   state.adminForms.registrationState = Boolean(state.adminOverview.registrationState?.isRegistrationOpen);
   render();
 }
@@ -1327,6 +1360,7 @@ function bindAdminForms() {
   const registrationForm = app.querySelector('[data-admin-registration-form]');
   const phaseForm = app.querySelector('[data-admin-phase-form]');
   const matchForm = app.querySelector('[data-admin-match-form]');
+  const semifinalAnswerKeyForm = app.querySelector('[data-admin-semifinal-answer-key-form]');
   const phaseCancel = app.querySelector('[data-admin-phase-cancel]');
   const matchCancel = app.querySelector('[data-admin-match-cancel]');
   const matchFilterPhase = app.querySelector('#match-filter-phase');
@@ -1551,6 +1585,52 @@ function bindAdminForms() {
     });
   }
 
+  if (semifinalAnswerKeyForm) {
+    semifinalAnswerKeyForm.querySelectorAll('[data-admin-input]').forEach((input) => {
+      const eventName = input.tagName === 'SELECT' ? 'change' : 'input';
+      input.addEventListener(eventName, (event) => {
+        const semifinalIndex = Number(input.getAttribute('data-semifinal-index'));
+        if (input.hasAttribute('data-semifinal-index') && Number.isInteger(semifinalIndex)) {
+          state.adminForms.semifinalAnswerKey.teamCodes[semifinalIndex] = event.target.value;
+        } else {
+          state.adminForms.semifinalAnswerKey[input.name] = event.target.value;
+        }
+      });
+    });
+
+    semifinalAnswerKeyForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      state.isSavingSemifinalAnswerKey = true;
+      state.adminSemifinalAnswerKeyMessage = null;
+      render();
+
+      try {
+        const response = await saveSemifinalAnswerKey({
+          championTeamCode: state.adminForms.semifinalAnswerKey.championTeamCode,
+          teamCodes: state.adminForms.semifinalAnswerKey.teamCodes,
+          topScorerName: state.adminForms.semifinalAnswerKey.topScorerName,
+          topScorerGoals: state.adminForms.semifinalAnswerKey.topScorerGoals
+        });
+        state.adminForms.semifinalAnswerKey = normalizeExtraAnswerKeyForm(response.data.answerKey);
+        state.adminSemifinalAnswerKeyMessage = {
+          tone: 'success',
+          title: 'Gabarito salvo',
+          body: `${response.data.updatedPredictions} palpites recalculados e ranking atualizado.`
+        };
+        notify('Gabarito dos extras salvo.');
+      } catch (error) {
+        state.adminSemifinalAnswerKeyMessage = {
+          tone: 'danger',
+          title: 'Falha ao salvar gabarito',
+          body: error.message
+        };
+      } finally {
+        state.isSavingSemifinalAnswerKey = false;
+        render();
+      }
+    });
+  }
+
   if (phaseCancel) {
     phaseCancel.addEventListener('click', () => {
       resetPhaseForm();
@@ -1723,8 +1803,9 @@ async function boot() {
         window.history.replaceState({}, '', '/admin');
       }
 
-      const overview = await getAdminOverview();
+      const [overview, answerKey] = await Promise.all([getAdminOverview(), getSemifinalAnswerKey()]);
       state.adminOverview = overview.data;
+      state.adminForms.semifinalAnswerKey = normalizeExtraAnswerKeyForm(answerKey.data.answerKey);
       hydrateAdminFormsFromOverview();
     } else if (pathRoute === 'admin') {
       state.route = 'admin';

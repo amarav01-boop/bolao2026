@@ -77,6 +77,26 @@ test('calculateDenseRanking includes group classification bonus points', () => {
   );
 });
 
+test('calculateDenseRanking includes persisted semifinal bonus points', () => {
+  const ranking = calculateDenseRanking(
+    [
+      { id: 1, username: 'ana@example.com', nickname: 'Ana', avatarKey: 'craque' },
+      { id: 2, username: 'bia@example.com', nickname: 'Bia', avatarKey: 'maestro' }
+    ],
+    [{ participantId: 2, pointsAwarded: 2 }],
+    [{ participantId: 1, pointsAwarded: 1 }],
+    [{ participantId: 1, pointsAwarded: 4 }, { participantId: 2, pointsAwarded: 1 }]
+  );
+
+  assert.deepEqual(
+    ranking.map((row) => ({ nickname: row.nickname, points: row.points })),
+    [
+      { nickname: 'Ana', points: 5 },
+      { nickname: 'Bia', points: 3 }
+    ]
+  );
+});
+
 test('deriveRankingMovement keeps an existing ranking neutral before the first baseline recalculation', () => {
   assert.deepEqual(
     deriveRankingMovement({

@@ -5,6 +5,7 @@ const authService = require('./auth-service');
 const participantService = require('./participant-service');
 const predictionService = require('./prediction-service');
 const rankingService = require('./ranking-service');
+const semifinalAnswerKeyService = require('./semifinal-answer-key-service');
 const competitionRepository = require('../repositories/competition-repository');
 
 const TEMPORARY_PASSWORD_CITIES = [
@@ -280,6 +281,16 @@ async function recalculateRanking() {
   };
 }
 
+async function getSemifinalAnswerKey() {
+  return semifinalAnswerKeyService.getSemifinalAnswerKey();
+}
+
+async function saveSemifinalAnswerKey(input) {
+  const result = await semifinalAnswerKeyService.saveSemifinalAnswerKey(input);
+  const ranking = await rankingService.recalculateRankingPositions({ forceSnapshot: true });
+  return { ...result, updatedParticipants: ranking.updatedParticipants };
+}
+
 function generateTemporaryPassword() {
   const city = TEMPORARY_PASSWORD_CITIES[crypto.randomInt(TEMPORARY_PASSWORD_CITIES.length)];
   const number = crypto.randomInt(100, 1000);
@@ -308,11 +319,13 @@ module.exports = {
   createPhase,
   getAdminSession,
   getOverview,
+  getSemifinalAnswerKey,
   listMatches,
   listPhases,
   loginAdmin,
   recalculateRanking,
   resetParticipantPassword,
+  saveSemifinalAnswerKey,
   setRegistrationState,
   updateMatch,
   updatePhase,

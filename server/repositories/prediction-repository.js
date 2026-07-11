@@ -203,7 +203,9 @@ async function listAllExtraPredictions() {
         points_awarded,
         created_at,
         updated_at
-      FROM competition_extra_predictions
+      FROM competition_extra_predictions extras
+      INNER JOIN competition_phases phases ON phases.id = extras.phase_id
+      WHERE phases.code = 'group-stage'
       ORDER BY participant_id ASC, phase_id ASC
     `
   );

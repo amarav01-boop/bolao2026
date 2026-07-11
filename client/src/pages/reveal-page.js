@@ -241,7 +241,7 @@ export function renderRevealExtras(extras) {
           <p class="panel__label">Palpites extras</p>
           <h3>Escolhas para a Copa</h3>
         </div>
-        <span class="chip">Somente leitura</span>
+        <span class="chip">${extras.pointsAwarded === null || extras.pointsAwarded === undefined ? 'Aguardando pontuacao' : `${escapeHtml(extras.pointsAwarded)} pts nos extras`}</span>
       </div>
       <dl class="revealed-extras__grid">
         <div class="revealed-extra-item">

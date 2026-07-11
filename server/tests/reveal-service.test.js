@@ -17,7 +17,7 @@ test('buildRevealExtras exposes all participant extra predictions as read-only d
     semiFinalist3Name: 'Argentina',
     semiFinalist4Code: 'ESP',
     semiFinalist4Name: 'Espanha',
-    pointsAwarded: null
+    pointsAwarded: 35
   });
 
   assert.equal(extras.champion.name, 'Brasil');
@@ -27,6 +27,7 @@ test('buildRevealExtras exposes all participant extra predictions as read-only d
   );
   assert.equal(extras.topScorer.name, 'Vinicius Junior');
   assert.equal(extras.topScorer.goals, 7);
+  assert.equal(extras.pointsAwarded, 35);
 });
 
 test('buildRevealExtras returns null when the participant has no extra prediction row', () => {
