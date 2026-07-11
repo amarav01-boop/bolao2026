@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  calculateExtraPredictionBreakdown,
   calculateExtraPredictionPoints,
   calculateSemifinalPoints,
   isScorerNameMatch,
@@ -60,6 +61,66 @@ test('calculateExtraPredictionPoints applies the published weights independently
   assert.equal(calculateExtraPredictionPoints({ ...fullHit, topScorerName: 'Rodrygo' }, answerKey), 35);
   assert.equal(calculateExtraPredictionPoints({ ...fullHit, topScorerGoals: 8 }, answerKey), 40);
   assert.equal(calculateExtraPredictionPoints({ ...fullHit, championTeamCode: 'ARG' }, answerKey), 35);
+});
+
+test('calculateExtraPredictionBreakdown reports calculated categories and matches total scoring', () => {
+  const answerKey = {
+    champion: { code: 'BRA', name: 'Brasil' },
+    semifinalists: ['BRA', 'ARG', 'FRA', 'ESP'].map((code) => ({ code, name: code })),
+    topScorerName: 'Vinicius Junior',
+    topScorerGoals: 7
+  };
+  const prediction = {
+    championTeamCode: 'BRA',
+    semiFinalistCodes: ['BRA', 'ARG', 'URU', 'ESP'],
+    topScorerName: 'Vini Jr',
+    topScorerGoals: 7
+  };
+
+  const breakdown = calculateExtraPredictionBreakdown(prediction, answerKey);
+
+  assert.deepEqual(breakdown.calculatedCategories, ['semifinalists', 'champion', 'topScorer', 'topScorerGoals']);
+  assert.equal(breakdown.categories.semifinalists.points, 15);
+  assert.equal(breakdown.categories.champion.points, 10);
+  assert.equal(breakdown.categories.topScorer.points, 10);
+  assert.equal(breakdown.categories.topScorerGoals.points, 5);
+  assert.equal(breakdown.totalPoints, 40);
+  assert.equal(calculateExtraPredictionPoints(prediction, answerKey), breakdown.totalPoints);
+});
+
+test('calculateExtraPredictionBreakdown marks missing official categories as awaiting key', () => {
+  const breakdown = calculateExtraPredictionBreakdown({
+    championTeamCode: 'BRA',
+    semiFinalistCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+    topScorerName: 'Vini Jr',
+    topScorerGoals: 7
+  }, {
+    teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+    championTeamCode: null,
+    topScorerName: null,
+    topScorerGoals: null
+  });
+
+  assert.deepEqual(breakdown.calculatedCategories, ['semifinalists']);
+  assert.equal(breakdown.categories.semifinalists.points, 20);
+  assert.equal(breakdown.categories.champion.calculated, false);
+  assert.equal(breakdown.categories.topScorer.calculated, false);
+  assert.equal(breakdown.categories.topScorerGoals.calculated, false);
+  assert.equal(breakdown.totalPoints, 20);
+});
+
+test('calculateExtraPredictionBreakdown treats whitespace goal key as missing', () => {
+  const breakdown = calculateExtraPredictionBreakdown({
+    semiFinalistCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+    topScorerGoals: 0
+  }, {
+    teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+    topScorerGoals: '   '
+  });
+
+  assert.equal(breakdown.categories.topScorerGoals.calculated, false);
+  assert.equal(breakdown.categories.topScorerGoals.points, 0);
+  assert.equal(breakdown.totalPoints, 20);
 });
 
 test('split answer key schemas accept and normalize their own card payloads', () => {

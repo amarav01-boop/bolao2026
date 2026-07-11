@@ -10,7 +10,14 @@ test('admin dashboard renders independent responsive extra answer key cards', as
     adminSession: { username: 'admin' },
     adminSavedAnswerKey: {
       championTeamCode: 'BRA',
+      championTeamName: 'Brasil',
       teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+      teams: [
+        { code: 'BRA', name: 'Brasil' },
+        { code: 'ARG', name: 'Argentina' },
+        { code: 'FRA', name: 'Franca' },
+        { code: 'ESP', name: 'Espanha' }
+      ],
       topScorerName: 'Vinicius Junior',
       topScorerGoals: '0'
     },
@@ -21,7 +28,14 @@ test('admin dashboard renders independent responsive extra answer key cards', as
       match: {},
       semifinalAnswerKey: {
         championTeamCode: 'BRA',
+        championTeamName: 'Brasil',
         teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+        teams: [
+          { code: 'BRA', name: 'Brasil' },
+          { code: 'ARG', name: 'Argentina' },
+          { code: 'FRA', name: 'Franca' },
+          { code: 'ESP', name: 'Espanha' }
+        ],
         topScorerName: 'Vinicius Junior',
         topScorerGoals: '0'
       }
@@ -35,6 +49,9 @@ test('admin dashboard renders independent responsive extra answer key cards', as
   assert.equal((html.match(/data-semifinal-index=/gu) || []).length, 4);
   assert.match(html, /name="topScorerName"/u);
   assert.match(html, /name="topScorerGoals"/u);
+  assert.match(html, /<option value="BRA" selected>/u);
+  assert.match(html, /<option value="ARG" selected>/u);
+  assert.match(html, /value="Vinicius Junior"/u);
   assert.match(html, /value="0"/u);
   assert.match(html, /Salvar semifinalistas/u);
   assert.match(html, /Salvar resultado final/u);

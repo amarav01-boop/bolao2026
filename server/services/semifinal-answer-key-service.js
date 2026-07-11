@@ -86,27 +86,85 @@ function calculateSemifinalPoints(selections = [], answerKey = []) {
   return Array.from(selectionSet).filter((code) => answerSet.has(code)).length * 5;
 }
 
+function hasOfficialGoalCount(value) {
+  return value !== null && value !== undefined && String(value).trim() !== '' && Number.isFinite(Number(value));
+}
+
+function getAnswerKeyChampionCode(answerKey = {}) {
+  return normalizeTeamCode(answerKey.championTeamCode || answerKey.champion?.code);
+}
+
+function getAnswerKeyTeamCodes(answerKey = {}) {
+  return (answerKey.teamCodes || answerKey.semifinalists?.map((team) => team?.code) || [])
+    .map(normalizeTeamCode)
+    .filter(Boolean);
+}
+
+function calculateExtraPredictionBreakdown(prediction = {}, answerKey = {}) {
+  const officialSemifinalCodes = getAnswerKeyTeamCodes(answerKey);
+  const officialChampionCode = getAnswerKeyChampionCode(answerKey);
+  const officialScorerName = answerKey.topScorerName || '';
+  const officialScorerGoals = answerKey.topScorerGoals;
+
+  const categories = {
+    semifinalists: {
+      calculated: officialSemifinalCodes.length === 4,
+      points: 0,
+      maxPoints: 20
+    },
+    champion: {
+      calculated: Boolean(officialChampionCode),
+      points: 0,
+      maxPoints: 10
+    },
+    topScorer: {
+      calculated: Boolean(normalizePersonName(officialScorerName)),
+      points: 0,
+      maxPoints: 10
+    },
+    topScorerGoals: {
+      calculated: hasOfficialGoalCount(officialScorerGoals),
+      points: 0,
+      maxPoints: 5
+    }
+  };
+
+  if (categories.semifinalists.calculated) {
+    categories.semifinalists.points = calculateSemifinalPoints(prediction.semiFinalistCodes, officialSemifinalCodes);
+  }
+  if (
+    categories.champion.calculated &&
+    normalizeTeamCode(prediction.championTeamCode) === officialChampionCode
+  ) {
+    categories.champion.points = 10;
+  }
+  if (
+    categories.topScorer.calculated &&
+    isScorerNameMatch(prediction.topScorerName, officialScorerName)
+  ) {
+    categories.topScorer.points = 10;
+  }
+  if (
+    categories.topScorerGoals.calculated &&
+    hasOfficialGoalCount(prediction.topScorerGoals) &&
+    Number(prediction.topScorerGoals) === Number(officialScorerGoals)
+  ) {
+    categories.topScorerGoals.points = 5;
+  }
+
+  const calculatedCategories = Object.entries(categories)
+    .filter(([, category]) => category.calculated)
+    .map(([name]) => name);
+
+  return {
+    totalPoints: Object.values(categories).reduce((total, category) => total + category.points, 0),
+    calculatedCategories,
+    categories
+  };
+}
+
 function calculateExtraPredictionPoints(prediction = {}, answerKey = {}) {
-  let points = calculateSemifinalPoints(prediction.semiFinalistCodes, answerKey.teamCodes);
-
-  if (
-    normalizeTeamCode(answerKey.championTeamCode) &&
-    normalizeTeamCode(prediction.championTeamCode) === normalizeTeamCode(answerKey.championTeamCode)
-  ) {
-    points += 10;
-  }
-  if (isScorerNameMatch(prediction.topScorerName, answerKey.topScorerName)) {
-    points += 10;
-  }
-  if (
-    prediction.topScorerGoals !== null && prediction.topScorerGoals !== undefined &&
-    answerKey.topScorerGoals !== null && answerKey.topScorerGoals !== undefined &&
-    Number(prediction.topScorerGoals) === Number(answerKey.topScorerGoals)
-  ) {
-    points += 5;
-  }
-
-  return points;
+  return calculateExtraPredictionBreakdown(prediction, answerKey).totalPoints;
 }
 
 async function getSemifinalAnswerKey() {
@@ -212,6 +270,7 @@ async function saveFinalAnswerKey(input) {
 }
 
 module.exports = {
+  calculateExtraPredictionBreakdown,
   calculateExtraPredictionPoints,
   calculateSemifinalPoints,
   getSemifinalAnswerKey,

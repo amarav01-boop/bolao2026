@@ -120,9 +120,22 @@ function normalizeExtraAnswerKeyForm(answerKey) {
     return createDefaultExtraAnswerKeyForm();
   }
 
+  const teams = Array.isArray(answerKey.teams)
+    ? answerKey.teams
+        .filter((team) => team?.code)
+        .map((team) => ({
+          code: team.code,
+          name: team.name || team.code
+        }))
+    : (answerKey.teamCodes || [])
+        .filter(Boolean)
+        .map((code) => ({ code, name: code }));
+
   return {
     championTeamCode: answerKey.championTeamCode || '',
-    teamCodes: answerKey.teamCodes || ['', '', '', ''],
+    championTeamName: answerKey.championTeamName || answerKey.championTeamCode || '',
+    teamCodes: (answerKey.teamCodes || teams.map((team) => team.code)).concat(['', '', '', '']).slice(0, 4),
+    teams,
     topScorerName: answerKey.topScorerName || '',
     topScorerGoals: answerKey.topScorerGoals === null || answerKey.topScorerGoals === undefined
       ? ''

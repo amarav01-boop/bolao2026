@@ -173,6 +173,52 @@
   border-bottom: 0;
 }
 
+.revealed-extras__summary {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.revealed-extra-score-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.revealed-extra-score-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.65fr) minmax(0, 1fr) minmax(0, 1fr) minmax(8.5rem, auto);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.revealed-extra-score-row > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.revealed-extra-score-row span:not(.chip) {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.revealed-extra-score-row strong {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.revealed-extra-score-row > .chip {
+  justify-self: end;
+  min-width: 0;
+  white-space: normal;
+}
+
 .revealed-group-list {
   display: grid;
   gap: 1rem;
@@ -284,6 +330,14 @@
 
   .revealed-extra-item--wide {
     grid-row: auto;
+  }
+
+  .revealed-extra-score-row {
+    grid-template-columns: 1fr;
+  }
+
+  .revealed-extra-score-row > .chip {
+    justify-self: start;
   }
 
   .revealed-prediction-row {

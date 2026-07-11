@@ -223,7 +223,7 @@ function renderRevealedGroupStandings(group, showClassification = true) {
   `;
 }
 
-export function renderRevealExtras(extras) {
+function renderRevealExtrasLegacy(extras) {
   if (!extras) {
     return '';
   }
@@ -269,6 +269,124 @@ export function renderRevealExtras(extras) {
           <dd>${escapeHtml(topScorerGoals)}</dd>
         </div>
       </dl>
+    </section>
+  `;
+}
+
+const EXTRA_CATEGORY_LABELS = {
+  semifinalists: 'Semifinalistas',
+  champion: 'Campeão',
+  topScorer: 'Artilheiro',
+  topScorerGoals: 'Número de gols'
+};
+
+function formatRevealTeams(teams = []) {
+  const values = [0, 1, 2, 3].map((index) => {
+    const team = teams[index] || {};
+    return `${index + 1}. ${team.name || team.code || 'Não informado'}`;
+  });
+
+  return values.join(' | ');
+}
+
+function formatRevealCategoryValue(categoryKey, value) {
+  if (categoryKey === 'semifinalists') {
+    return formatRevealTeams(value);
+  }
+
+  if (categoryKey === 'champion') {
+    return value?.name || value?.code || 'Não informado';
+  }
+
+  if (categoryKey === 'topScorer') {
+    return value?.name || 'Não informado';
+  }
+
+  if (categoryKey === 'topScorerGoals') {
+    return value === null || value === undefined || value === '' ? 'Não informado' : String(value);
+  }
+
+  return value || 'Não informado';
+}
+
+function renderRevealScoringSummary(extras) {
+  const scoring = extras?.scoring;
+  if (!scoring?.categories) {
+    return '';
+  }
+
+  const calculatedLabels = (scoring.calculatedCategories || [])
+    .map((categoryKey) => EXTRA_CATEGORY_LABELS[categoryKey])
+    .filter(Boolean);
+  const pendingLabels = Object.entries(scoring.categories)
+    .filter(([, category]) => !category.calculated)
+    .map(([categoryKey]) => EXTRA_CATEGORY_LABELS[categoryKey])
+    .filter(Boolean);
+  const calculatedText = calculatedLabels.length
+    ? `Pontuação calculada: ${calculatedLabels.join(', ')}.`
+    : 'Nenhuma pontuação extra foi calculada ainda.';
+  const pendingText = pendingLabels.length
+    ? ` Aguardando gabarito: ${pendingLabels.join(', ')}.`
+    : '';
+  const persistedPoints = extras.pointsAwarded === null || extras.pointsAwarded === undefined
+    ? null
+    : Number(extras.pointsAwarded);
+  const calculatedTotal = Number(scoring.totalPoints);
+  const totalText = Number.isFinite(persistedPoints) && Number.isFinite(calculatedTotal) && persistedPoints !== calculatedTotal
+    ? ` Total calculado pelas categorias exibidas: ${calculatedTotal} pts. Total oficial persistido: ${persistedPoints} pts.`
+    : '';
+
+  return `<p class="revealed-extras__summary">${escapeHtml(calculatedText + pendingText + totalText)}</p>`;
+}
+
+function renderRevealScoringRows(scoring) {
+  if (!scoring?.categories) {
+    return '';
+  }
+
+  return `
+    <div class="revealed-extra-score-list">
+      ${Object.entries(scoring.categories)
+        .map(([categoryKey, category]) => `
+          <div class="revealed-extra-score-row">
+            <div>
+              <p class="panel__label">${escapeHtml(EXTRA_CATEGORY_LABELS[categoryKey] || categoryKey)}</p>
+              <strong>${escapeHtml(category.points)} / ${escapeHtml(category.maxPoints)} pts</strong>
+            </div>
+            <div>
+              <span>Palpite</span>
+              <strong>${escapeHtml(formatRevealCategoryValue(categoryKey, category.prediction))}</strong>
+            </div>
+            <div>
+              <span>Gabarito</span>
+              <strong>${escapeHtml(category.calculated ? formatRevealCategoryValue(categoryKey, category.answer) : 'Aguardando gabarito')}</strong>
+            </div>
+            <span class="chip ${category.calculated ? 'chip--accent' : ''}">
+              ${category.calculated ? 'Calculado' : 'Aguardando gabarito'}
+            </span>
+          </div>
+        `)
+        .join('')}
+    </div>
+  `;
+}
+
+export function renderRevealExtras(extras) {
+  if (!extras?.scoring?.categories) {
+    return renderRevealExtrasLegacy(extras);
+  }
+
+  return `
+    <section class="revealed-extras" aria-label="Palpites extras do participante">
+      <div class="panel__header">
+        <div>
+          <p class="panel__label">Palpites extras</p>
+          <h3>Escolhas para a Copa</h3>
+        </div>
+        <span class="chip">${extras.pointsAwarded === null || extras.pointsAwarded === undefined ? 'Aguardando pontuacao' : `${escapeHtml(extras.pointsAwarded)} pts nos extras`}</span>
+      </div>
+      ${renderRevealScoringSummary(extras)}
+      ${renderRevealScoringRows(extras.scoring)}
     </section>
   `;
 }

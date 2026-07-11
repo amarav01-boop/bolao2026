@@ -84,6 +84,24 @@ function collectTeamOptions(matches = []) {
   return Array.from(teams.values()).sort((left, right) => left.name.localeCompare(right.name, 'pt-BR'));
 }
 
+function mergeTeamOptions(...optionGroups) {
+  const teams = new Map();
+
+  optionGroups.flat().forEach((team) => {
+    const code = String(team?.code || '').trim();
+    if (!code || teams.has(code)) {
+      return;
+    }
+
+    teams.set(code, {
+      code,
+      name: String(team.name || code).trim()
+    });
+  });
+
+  return Array.from(teams.values()).sort((left, right) => left.name.localeCompare(right.name, 'pt-BR'));
+}
+
 function renderTeamSelectField({ id, name, label, value = '', options = [], disabled = false }) {
   return `
     <label class="field prediction-entry-team" for="${id}">
@@ -504,10 +522,26 @@ function renderMatchForm(state) {
 }
 
 function renderSemifinalAnswerKeyForm(state) {
-  const teamOptions = collectTeamOptions(state.adminOverview?.matches || []);
+  const savedAnswerKey = state.adminSavedAnswerKey || {};
   const answerKey = state.adminForms.semifinalAnswerKey || {};
+  const savedTeams = savedAnswerKey.teams || [];
+  const savedTeamCodes = savedAnswerKey.teamCodes || ['', '', '', ''];
+  const formTeams = (answerKey.teamCodes || [])
+    .filter(Boolean)
+    .map((code) => ({ code, name: code }));
+  const teamOptions = mergeTeamOptions(
+    collectTeamOptions(state.adminOverview?.matches || []),
+    savedTeams,
+    formTeams
+  );
   const teamCodes = answerKey.teamCodes || ['', '', '', ''];
-  const savedTeamCodes = state.adminSavedAnswerKey?.teamCodes || ['', '', '', ''];
+  const championFallback = savedAnswerKey.championTeamCode
+    ? [{ code: savedAnswerKey.championTeamCode, name: savedAnswerKey.championTeamName || savedAnswerKey.championTeamCode }]
+    : [];
+  const championOptions = mergeTeamOptions(
+    savedTeamCodes.map((code) => teamOptions.find((team) => team.code === code)).filter(Boolean),
+    championFallback
+  );
   const isSavingAnswerKey = state.isSavingSemifinalAnswerKey || state.isSavingFinalAnswerKey;
 
   return `
@@ -557,7 +591,7 @@ function renderSemifinalAnswerKeyForm(state) {
             name: 'championTeamCode',
             label: 'Campeao da Copa - 10 pts',
             value: answerKey.championTeamCode || '',
-            options: savedTeamCodes.map((code) => teamOptions.find((team) => team.code === code)).filter(Boolean),
+            options: championOptions,
             disabled: isSavingAnswerKey
           })}
           ${renderFormField({
