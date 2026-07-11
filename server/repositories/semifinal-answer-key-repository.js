@@ -82,7 +82,7 @@ async function saveAnswerKeyAndScores(answerKey, calculatePoints) {
     );
 
     const [rows] = await connection.query(
-      `SELECT id, champion_team_code, top_scorer_name, top_scorer_goals,
+      `SELECT extras.id, extras.champion_team_code, extras.top_scorer_name, extras.top_scorer_goals,
               semi_finalist_1_team_code, semi_finalist_2_team_code,
               semi_finalist_3_team_code, semi_finalist_4_team_code
        FROM competition_extra_predictions extras

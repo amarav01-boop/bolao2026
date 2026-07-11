@@ -227,6 +227,7 @@ test('saveFinalAnswerKey requires semifinalists and merges the final fields', as
 test('saveAnswerKeyAndScores overwrites stale semifinal points on correction', async () => {
   const originalGetConnection = pool.getConnection;
   const awardedPoints = [];
+  let scoringSelectSql = '';
   const rows = [{
     id: 9,
     semi_finalist_1_team_code: 'BRA',
@@ -244,6 +245,7 @@ test('saveAnswerKeyAndScores overwrites stale semifinal points on correction', a
     release: () => {},
     query: async (sql, params) => {
       if (sql.includes('FROM competition_extra_predictions')) {
+        scoringSelectSql = sql;
         return [rows];
       }
       if (sql.startsWith('UPDATE competition_extra_predictions')) {
@@ -264,6 +266,7 @@ test('saveAnswerKeyAndScores overwrites stale semifinal points on correction', a
     await answerKeyRepository.saveAnswerKeyAndScores(answerKey, () => 45);
     await answerKeyRepository.saveAnswerKeyAndScores(answerKey, () => 15);
     assert.deepEqual(awardedPoints, [45, 15]);
+    assert.match(scoringSelectSql, /SELECT extras\.id/u);
   } finally {
     pool.getConnection = originalGetConnection;
   }
