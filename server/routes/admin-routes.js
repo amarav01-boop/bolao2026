@@ -8,6 +8,7 @@ const { requireAdmin } = require('../middleware/require-admin');
 const adminService = require('../services/admin-service');
 const {
   adminLoginSchema,
+  finalAnswerKeySchema,
   matchBaseSchema,
   matchUpdateSchema,
   phaseBaseSchema,
@@ -165,11 +166,21 @@ router.get(
 );
 
 router.put(
-  '/semifinal-answer-key',
+  '/semifinal-answer-key/semifinalists',
   requireAdmin,
   validate(semifinalAnswerKeySchema),
   asyncRoute(async (req, res) => {
     const result = await adminService.saveSemifinalAnswerKey(req.body);
+    return res.json(successResponse(result));
+  })
+);
+
+router.put(
+  '/semifinal-answer-key/final-result',
+  requireAdmin,
+  validate(finalAnswerKeySchema),
+  asyncRoute(async (req, res) => {
+    const result = await adminService.saveFinalAnswerKey(req.body);
     return res.json(successResponse(result));
   })
 );

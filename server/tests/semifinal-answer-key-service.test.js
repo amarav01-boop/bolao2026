@@ -5,13 +5,23 @@ const {
   calculateExtraPredictionPoints,
   calculateSemifinalPoints,
   isScorerNameMatch,
+  saveFinalAnswerKey,
   saveSemifinalAnswerKey
 } = require('../services/semifinal-answer-key-service');
-const { semifinalAnswerKeySchema } = require('../schemas/admin-schemas');
+const { finalAnswerKeySchema, semifinalAnswerKeySchema } = require('../schemas/admin-schemas');
 const answerKeyRepository = require('../repositories/semifinal-answer-key-repository');
 const competitionRepository = require('../repositories/competition-repository');
 const { pool } = require('../db/pool');
 const { mapAnswerKeyRow } = answerKeyRepository;
+const originalWithAnswerKeyLock = answerKeyRepository.withAnswerKeyLock;
+
+test.before(() => {
+  answerKeyRepository.withAnswerKeyLock = async (work) => work();
+});
+
+test.after(() => {
+  answerKeyRepository.withAnswerKeyLock = originalWithAnswerKeyLock;
+});
 
 test('calculateSemifinalPoints compares team codes without considering order', () => {
   const answerKey = ['BRA', 'ARG', 'FRA', 'ESP'];
@@ -52,42 +62,54 @@ test('calculateExtraPredictionPoints applies the published weights independently
   assert.equal(calculateExtraPredictionPoints({ ...fullHit, championTeamCode: 'ARG' }, answerKey), 35);
 });
 
-test('semifinalAnswerKeySchema accepts the complete normalized answer key', () => {
+test('split answer key schemas accept and normalize their own card payloads', () => {
   const result = semifinalAnswerKeySchema.safeParse({
+    teamCodes: [' bra ', 'ARG', 'FRA', 'ESP']
+  });
+  const finalResult = finalAnswerKeySchema.safeParse({
     championTeamCode: ' bra ',
-    teamCodes: [' bra ', 'ARG', 'FRA', 'ESP'],
     topScorerName: ' Vinicius Junior ',
     topScorerGoals: 7
   });
 
   assert.equal(result.success, true);
-  assert.equal(result.data.championTeamCode, 'BRA');
   assert.deepEqual(result.data.teamCodes, ['BRA', 'ARG', 'FRA', 'ESP']);
-  assert.equal(result.data.topScorerName, 'Vinicius Junior');
+  assert.equal(finalResult.success, true);
+  assert.equal(finalResult.data.championTeamCode, 'BRA');
+  assert.equal(finalResult.data.topScorerName, 'Vinicius Junior');
 });
 
 test('semifinalAnswerKeySchema rejects missing and duplicate team codes', () => {
-  const base = { championTeamCode: 'BRA', topScorerName: 'Vini', topScorerGoals: 7 };
-  const missing = semifinalAnswerKeySchema.safeParse({ ...base, teamCodes: ['BRA', 'ARG', 'FRA'] });
-  const duplicate = semifinalAnswerKeySchema.safeParse({ ...base, teamCodes: ['BRA', 'ARG', 'FRA', 'bra'] });
+  const missing = semifinalAnswerKeySchema.safeParse({ teamCodes: ['BRA', 'ARG', 'FRA'] });
+  const duplicate = semifinalAnswerKeySchema.safeParse({ teamCodes: ['BRA', 'ARG', 'FRA', 'bra'] });
 
   assert.equal(missing.success, false);
   assert.equal(duplicate.success, false);
 });
 
-test('semifinalAnswerKeySchema rejects missing goals and a champion outside the semifinalists', () => {
+test('finalAnswerKeySchema rejects missing result fields', () => {
   const base = {
     championTeamCode: 'BRA',
-    teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
     topScorerName: 'Vinicius Junior'
   };
 
-  assert.equal(semifinalAnswerKeySchema.safeParse({ ...base, topScorerGoals: '' }).success, false);
-  assert.equal(semifinalAnswerKeySchema.safeParse({
-    ...base,
-    championTeamCode: 'GER',
-    topScorerGoals: 7
-  }).success, false);
+  assert.equal(finalAnswerKeySchema.safeParse({ ...base, topScorerGoals: '' }).success, false);
+});
+
+test('calculateExtraPredictionPoints ignores official categories that are not saved', () => {
+  const prediction = {
+    championTeamCode: '',
+    semiFinalistCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+    topScorerName: '',
+    topScorerGoals: null
+  };
+
+  assert.equal(calculateExtraPredictionPoints(prediction, {
+    teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+    championTeamCode: null,
+    topScorerName: null,
+    topScorerGoals: null
+  }), 20);
 });
 
 test('mapAnswerKeyRow restores the saved answer key for admin reload', () => {
@@ -110,6 +132,7 @@ test('mapAnswerKeyRow restores the saved answer key for admin reload', () => {
 
 test('saveSemifinalAnswerKey rejects a team that is not in match setup before writing', async () => {
   const originalListMatches = competitionRepository.listCompetitionMatches;
+  const originalFind = answerKeyRepository.findSemifinalAnswerKey;
   const originalSave = answerKeyRepository.saveAnswerKeyAndScores;
   let writeAttempted = false;
 
@@ -117,6 +140,7 @@ test('saveSemifinalAnswerKey rejects a team that is not in match setup before wr
     { homeTeamCode: 'BRA', homeTeamName: 'Brasil', awayTeamCode: 'ARG', awayTeamName: 'Argentina' },
     { homeTeamCode: 'FRA', homeTeamName: 'Franca', awayTeamCode: 'ESP', awayTeamName: 'Espanha' }
   ];
+  answerKeyRepository.findSemifinalAnswerKey = async () => null;
   answerKeyRepository.saveAnswerKeyAndScores = async () => {
     writeAttempted = true;
   };
@@ -124,16 +148,78 @@ test('saveSemifinalAnswerKey rejects a team that is not in match setup before wr
   try {
     await assert.rejects(
       saveSemifinalAnswerKey({
-        championTeamCode: 'BRA',
-        teamCodes: ['BRA', 'ARG', 'FRA', 'XXX'],
-        topScorerName: 'Vinicius Junior',
-        topScorerGoals: 7
+        teamCodes: ['BRA', 'ARG', 'FRA', 'XXX']
       }),
       (error) => error.code === 'INVALID_SEMIFINAL_TEAM'
     );
     assert.equal(writeAttempted, false);
   } finally {
     competitionRepository.listCompetitionMatches = originalListMatches;
+    answerKeyRepository.findSemifinalAnswerKey = originalFind;
+    answerKeyRepository.saveAnswerKeyAndScores = originalSave;
+  }
+});
+
+test('saveSemifinalAnswerKey preserves final fields and rejects removing the saved champion', async () => {
+  const originalListMatches = competitionRepository.listCompetitionMatches;
+  const originalFind = answerKeyRepository.findSemifinalAnswerKey;
+  const originalSave = answerKeyRepository.saveAnswerKeyAndScores;
+  let savedAnswerKey;
+  competitionRepository.listCompetitionMatches = async () => [
+    { homeTeamCode: 'BRA', homeTeamName: 'Brasil', awayTeamCode: 'ARG', awayTeamName: 'Argentina' },
+    { homeTeamCode: 'FRA', homeTeamName: 'Franca', awayTeamCode: 'ESP', awayTeamName: 'Espanha' },
+    { homeTeamCode: 'URU', homeTeamName: 'Uruguai', awayTeamCode: 'COL', awayTeamName: 'Colombia' }
+  ];
+  answerKeyRepository.findSemifinalAnswerKey = async () => ({
+    championTeamCode: 'BRA', championTeamName: 'Brasil',
+    teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+    topScorerName: 'Vinicius Junior', topScorerGoals: 7
+  });
+  answerKeyRepository.saveAnswerKeyAndScores = async (answerKey) => {
+    savedAnswerKey = answerKey;
+    return 4;
+  };
+
+  try {
+    await saveSemifinalAnswerKey({ teamCodes: ['BRA', 'ARG', 'FRA', 'URU'] });
+    assert.equal(savedAnswerKey.champion.code, 'BRA');
+    assert.equal(savedAnswerKey.topScorerName, 'Vinicius Junior');
+    await assert.rejects(
+      saveSemifinalAnswerKey({ teamCodes: ['ARG', 'FRA', 'ESP', 'URU'] }),
+      (error) => error.code === 'CHAMPION_NOT_SEMIFINALIST'
+    );
+  } finally {
+    competitionRepository.listCompetitionMatches = originalListMatches;
+    answerKeyRepository.findSemifinalAnswerKey = originalFind;
+    answerKeyRepository.saveAnswerKeyAndScores = originalSave;
+  }
+});
+
+test('saveFinalAnswerKey requires semifinalists and merges the final fields', async () => {
+  const originalFind = answerKeyRepository.findSemifinalAnswerKey;
+  const originalSave = answerKeyRepository.saveAnswerKeyAndScores;
+  answerKeyRepository.findSemifinalAnswerKey = async () => null;
+
+  try {
+    await assert.rejects(
+      saveFinalAnswerKey({ championTeamCode: 'BRA', topScorerName: 'Vini', topScorerGoals: 7 }),
+      (error) => error.code === 'SEMIFINAL_ANSWER_KEY_REQUIRED'
+    );
+
+    let merged;
+    answerKeyRepository.findSemifinalAnswerKey = async () => ({
+      teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
+      teams: ['BRA', 'ARG', 'FRA', 'ESP'].map((code) => ({ code, name: code }))
+    });
+    answerKeyRepository.saveAnswerKeyAndScores = async (answerKey) => {
+      merged = answerKey;
+      return 3;
+    };
+    await saveFinalAnswerKey({ championTeamCode: 'BRA', topScorerName: 'Vini', topScorerGoals: 7 });
+    assert.equal(merged.champion.code, 'BRA');
+    assert.deepEqual(merged.semifinalists.map((team) => team.code), ['BRA', 'ARG', 'FRA', 'ESP']);
+  } finally {
+    answerKeyRepository.findSemifinalAnswerKey = originalFind;
     answerKeyRepository.saveAnswerKeyAndScores = originalSave;
   }
 });

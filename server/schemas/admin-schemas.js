@@ -10,20 +10,20 @@ const registrationStateSchema = z.object({
 });
 
 const semifinalAnswerKeySchema = z.object({
-  championTeamCode: z.string().trim().min(1, 'Selecione o campeao.').max(32).transform((code) => code.toUpperCase()),
   teamCodes: z
     .array(z.string().trim().min(1).max(32).transform((code) => code.toUpperCase()))
     .length(4, 'Selecione as quatro selecoes semifinalistas.')
-    .refine((codes) => new Set(codes).size === codes.length, 'As quatro selecoes devem ser diferentes.'),
+    .refine((codes) => new Set(codes).size === codes.length, 'As quatro selecoes devem ser diferentes.')
+});
+
+const finalAnswerKeySchema = z.object({
+  championTeamCode: z.string().trim().min(1, 'Selecione o campeao.').max(32).transform((code) => code.toUpperCase()),
   topScorerName: z.string().trim().min(2, 'Informe o artilheiro.').max(120),
   topScorerGoals: z.preprocess(
     (value) => value === '' || value === null ? undefined : value,
     z.coerce.number().int().min(0).max(99)
   )
-}).refine(
-  (value) => value.teamCodes.includes(value.championTeamCode),
-  { path: ['championTeamCode'], message: 'O campeao deve estar entre os semifinalistas.' }
-);
+});
 
 const phaseBaseSchema = z.object({
   code: z.string().trim().min(1, 'Informe o código da fase.').max(80),
@@ -78,6 +78,7 @@ const matchUpdateSchema = matchFieldsSchema.partial().superRefine(requireResultW
 
 module.exports = {
   adminLoginSchema,
+  finalAnswerKeySchema,
   matchBaseSchema,
   matchUpdateSchema,
   phaseBaseSchema,

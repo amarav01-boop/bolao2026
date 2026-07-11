@@ -23,6 +23,7 @@ import {
   logoutAdmin,
   recalculateAdminRanking,
   resetAdminParticipantPassword,
+  saveFinalAnswerKey,
   saveRegistrationState,
   saveSemifinalAnswerKey,
   updateAdminMatch,
@@ -139,12 +140,14 @@ const state = {
   sessionParticipant: null,
   adminSession: null,
   adminOverview: null,
+  adminSavedAnswerKey: null,
   isLoggingIn: false,
   isRegistering: false,
   isAdminLoggingIn: false,
   isSavingRegistration: false,
   isSavingPhase: false,
   isSavingMatch: false,
+  isSavingFinalAnswerKey: false,
   isSavingSemifinalAnswerKey: false,
   isRecalculatingRanking: false,
   isResettingParticipantPassword: false,
@@ -173,6 +176,7 @@ const state = {
   adminLoginFormError: null,
   adminPhaseFormError: null,
   adminMatchFormError: null,
+  adminFinalAnswerKeyMessage: null,
   adminSemifinalAnswerKeyMessage: null,
   adminMatchFilters: {
     phaseId: 'all',
@@ -829,6 +833,7 @@ async function refreshAdminOverview() {
     getSemifinalAnswerKey()
   ]);
   state.adminOverview = overviewResponse.data;
+  state.adminSavedAnswerKey = normalizeExtraAnswerKeyForm(answerKeyResponse.data.answerKey);
   state.adminForms.semifinalAnswerKey = normalizeExtraAnswerKeyForm(answerKeyResponse.data.answerKey);
   state.adminForms.registrationState = Boolean(state.adminOverview.registrationState?.isRegistrationOpen);
   render();
@@ -1361,6 +1366,7 @@ function bindAdminForms() {
   const phaseForm = app.querySelector('[data-admin-phase-form]');
   const matchForm = app.querySelector('[data-admin-match-form]');
   const semifinalAnswerKeyForm = app.querySelector('[data-admin-semifinal-answer-key-form]');
+  const finalAnswerKeyForm = app.querySelector('[data-admin-final-answer-key-form]');
   const phaseCancel = app.querySelector('[data-admin-phase-cancel]');
   const matchCancel = app.querySelector('[data-admin-match-cancel]');
   const matchFilterPhase = app.querySelector('#match-filter-phase');
@@ -1606,26 +1612,69 @@ function bindAdminForms() {
 
       try {
         const response = await saveSemifinalAnswerKey({
-          championTeamCode: state.adminForms.semifinalAnswerKey.championTeamCode,
-          teamCodes: state.adminForms.semifinalAnswerKey.teamCodes,
-          topScorerName: state.adminForms.semifinalAnswerKey.topScorerName,
-          topScorerGoals: state.adminForms.semifinalAnswerKey.topScorerGoals
+          teamCodes: state.adminForms.semifinalAnswerKey.teamCodes
         });
-        state.adminForms.semifinalAnswerKey = normalizeExtraAnswerKeyForm(response.data.answerKey);
+        const savedAnswerKey = normalizeExtraAnswerKeyForm(response.data.answerKey);
+        state.adminSavedAnswerKey = savedAnswerKey;
+        state.adminForms.semifinalAnswerKey.teamCodes = [...savedAnswerKey.teamCodes];
         state.adminSemifinalAnswerKeyMessage = {
           tone: 'success',
-          title: 'Gabarito salvo',
+          title: 'Semifinalistas salvos',
           body: `${response.data.updatedPredictions} palpites recalculados e ranking atualizado.`
         };
-        notify('Gabarito dos extras salvo.');
+        notify('Semifinalistas salvos.');
       } catch (error) {
         state.adminSemifinalAnswerKeyMessage = {
           tone: 'danger',
-          title: 'Falha ao salvar gabarito',
+          title: 'Falha ao salvar semifinalistas',
           body: error.message
         };
       } finally {
         state.isSavingSemifinalAnswerKey = false;
+        render();
+      }
+    });
+  }
+
+  if (finalAnswerKeyForm) {
+    finalAnswerKeyForm.querySelectorAll('[data-admin-input]').forEach((input) => {
+      const eventName = input.tagName === 'SELECT' ? 'change' : 'input';
+      input.addEventListener(eventName, (event) => {
+        state.adminForms.semifinalAnswerKey[input.name] = event.target.value;
+      });
+    });
+
+    finalAnswerKeyForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      state.isSavingFinalAnswerKey = true;
+      state.adminFinalAnswerKeyMessage = null;
+      render();
+
+      try {
+        const response = await saveFinalAnswerKey({
+          championTeamCode: state.adminForms.semifinalAnswerKey.championTeamCode,
+          topScorerName: state.adminForms.semifinalAnswerKey.topScorerName,
+          topScorerGoals: state.adminForms.semifinalAnswerKey.topScorerGoals
+        });
+        const savedAnswerKey = normalizeExtraAnswerKeyForm(response.data.answerKey);
+        state.adminSavedAnswerKey = savedAnswerKey;
+        state.adminForms.semifinalAnswerKey.championTeamCode = savedAnswerKey.championTeamCode;
+        state.adminForms.semifinalAnswerKey.topScorerName = savedAnswerKey.topScorerName;
+        state.adminForms.semifinalAnswerKey.topScorerGoals = savedAnswerKey.topScorerGoals;
+        state.adminFinalAnswerKeyMessage = {
+          tone: 'success',
+          title: 'Resultado final salvo',
+          body: `${response.data.updatedPredictions} palpites recalculados e ranking atualizado.`
+        };
+        notify('Resultado final salvo.');
+      } catch (error) {
+        state.adminFinalAnswerKeyMessage = {
+          tone: 'danger',
+          title: 'Falha ao salvar resultado final',
+          body: error.message
+        };
+      } finally {
+        state.isSavingFinalAnswerKey = false;
         render();
       }
     });
@@ -1805,6 +1854,7 @@ async function boot() {
 
       const [overview, answerKey] = await Promise.all([getAdminOverview(), getSemifinalAnswerKey()]);
       state.adminOverview = overview.data;
+      state.adminSavedAnswerKey = normalizeExtraAnswerKeyForm(answerKey.data.answerKey);
       state.adminForms.semifinalAnswerKey = normalizeExtraAnswerKeyForm(answerKey.data.answerKey);
       hydrateAdminFormsFromOverview();
     } else if (pathRoute === 'admin') {

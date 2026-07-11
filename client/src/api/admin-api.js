@@ -75,7 +75,14 @@ export function getSemifinalAnswerKey() {
 }
 
 export function saveSemifinalAnswerKey(payload) {
-  return fetchJson('/api/admin/semifinal-answer-key', {
+  return fetchJson('/api/admin/semifinal-answer-key/semifinalists', {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function saveFinalAnswerKey(payload) {
+  return fetchJson('/api/admin/semifinal-answer-key/final-result', {
     method: 'PUT',
     body: JSON.stringify(payload)
   });

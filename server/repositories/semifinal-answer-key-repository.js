@@ -1,5 +1,7 @@
 const { pool } = require('../db/pool');
 
+const ANSWER_KEY_LOCK_NAME = 'bolao2026:semifinal-answer-key';
+
 function mapAnswerKeyRow(row) {
   if (!row) {
     return null;
@@ -33,6 +35,24 @@ async function findSemifinalAnswerKey() {
   return mapAnswerKeyRow(rows[0]);
 }
 
+async function withAnswerKeyLock(work) {
+  const connection = await pool.getConnection();
+
+  try {
+    const [rows] = await connection.query('SELECT GET_LOCK(?, 10) AS acquired', [ANSWER_KEY_LOCK_NAME]);
+    if (Number(rows[0]?.acquired) !== 1) {
+      const error = new Error('Nao foi possivel bloquear o gabarito para atualizacao.');
+      error.status = 409;
+      error.code = 'ANSWER_KEY_BUSY';
+      throw error;
+    }
+    return await work();
+  } finally {
+    await connection.query('SELECT RELEASE_LOCK(?)', [ANSWER_KEY_LOCK_NAME]);
+    connection.release();
+  }
+}
+
 async function saveAnswerKeyAndScores(answerKey, calculatePoints) {
   const connection = await pool.getConnection();
 
@@ -53,8 +73,8 @@ async function saveAnswerKeyAndScores(answerKey, calculatePoints) {
          team_4_code = VALUES(team_4_code), team_4_name = VALUES(team_4_name),
          top_scorer_name = VALUES(top_scorer_name), top_scorer_goals = VALUES(top_scorer_goals)`,
       [
-        answerKey.champion.code,
-        answerKey.champion.name,
+        answerKey.champion?.code || null,
+        answerKey.champion?.name || null,
         ...answerKey.semifinalists.flatMap((team) => [team.code, team.name]),
         answerKey.topScorerName,
         answerKey.topScorerGoals
@@ -102,5 +122,6 @@ async function saveAnswerKeyAndScores(answerKey, calculatePoints) {
 module.exports = {
   findSemifinalAnswerKey,
   mapAnswerKeyRow,
-  saveAnswerKeyAndScores
+  saveAnswerKeyAndScores,
+  withAnswerKeyLock
 };

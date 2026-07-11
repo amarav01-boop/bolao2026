@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {
   generateTemporaryPassword,
   hasScoringRelevantMatchChange,
+  saveFinalAnswerKey,
   saveSemifinalAnswerKey
 } = require('../services/admin-service');
 const semifinalAnswerKeyService = require('../services/semifinal-answer-key-service');
@@ -46,19 +47,19 @@ test('hasScoringRelevantMatchChange detects completed result updates only', () =
   );
 });
 
-test('saveSemifinalAnswerKey saves complete extras before forcing ranking recalculation', async () => {
+test('each answer key card save forces ranking recalculation', async () => {
   const originalSave = semifinalAnswerKeyService.saveSemifinalAnswerKey;
+  const originalSaveFinal = semifinalAnswerKeyService.saveFinalAnswerKey;
   const originalRecalculate = rankingService.recalculateRankingPositions;
   const calls = [];
-  const input = {
-    championTeamCode: 'BRA',
-    teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'],
-    topScorerName: 'Vinicius Junior',
-    topScorerGoals: 7
-  };
+  const input = { teamCodes: ['BRA', 'ARG', 'FRA', 'ESP'] };
 
   semifinalAnswerKeyService.saveSemifinalAnswerKey = async (payload) => {
     calls.push(['save', payload]);
+    return { answerKey: payload, updatedPredictions: 12 };
+  };
+  semifinalAnswerKeyService.saveFinalAnswerKey = async (payload) => {
+    calls.push(['save-final', payload]);
     return { answerKey: payload, updatedPredictions: 12 };
   };
   rankingService.recalculateRankingPositions = async (options) => {
@@ -68,14 +69,18 @@ test('saveSemifinalAnswerKey saves complete extras before forcing ranking recalc
 
   try {
     const result = await saveSemifinalAnswerKey(input);
+    await saveFinalAnswerKey({ championTeamCode: 'BRA', topScorerName: 'Vini', topScorerGoals: 7 });
     assert.deepEqual(calls, [
       ['save', input],
+      ['ranking', { forceSnapshot: true }],
+      ['save-final', { championTeamCode: 'BRA', topScorerName: 'Vini', topScorerGoals: 7 }],
       ['ranking', { forceSnapshot: true }]
     ]);
     assert.equal(result.updatedPredictions, 12);
     assert.equal(result.updatedParticipants, 12);
   } finally {
     semifinalAnswerKeyService.saveSemifinalAnswerKey = originalSave;
+    semifinalAnswerKeyService.saveFinalAnswerKey = originalSaveFinal;
     rankingService.recalculateRankingPositions = originalRecalculate;
   }
 });

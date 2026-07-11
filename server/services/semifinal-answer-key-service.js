@@ -89,7 +89,10 @@ function calculateSemifinalPoints(selections = [], answerKey = []) {
 function calculateExtraPredictionPoints(prediction = {}, answerKey = {}) {
   let points = calculateSemifinalPoints(prediction.semiFinalistCodes, answerKey.teamCodes);
 
-  if (normalizeTeamCode(prediction.championTeamCode) === normalizeTeamCode(answerKey.championTeamCode)) {
+  if (
+    normalizeTeamCode(answerKey.championTeamCode) &&
+    normalizeTeamCode(prediction.championTeamCode) === normalizeTeamCode(answerKey.championTeamCode)
+  ) {
     points += 10;
   }
   if (isScorerNameMatch(prediction.topScorerName, answerKey.topScorerName)) {
@@ -110,7 +113,7 @@ async function getSemifinalAnswerKey() {
   return answerKeyRepository.findSemifinalAnswerKey();
 }
 
-async function saveSemifinalAnswerKey(input) {
+async function listTournamentTeams() {
   const matches = await competitionRepository.listCompetitionMatches();
   const teamsByCode = new Map();
 
@@ -126,16 +129,70 @@ async function saveSemifinalAnswerKey(input) {
     });
   });
 
-  const champion = teamsByCode.get(normalizeTeamCode(input.championTeamCode));
+  return teamsByCode;
+}
+
+function toPersistedAnswerKey(answerKey) {
+  const teams = answerKey?.teams || [];
+  return {
+    champion: answerKey?.championTeamCode
+      ? { code: answerKey.championTeamCode, name: answerKey.championTeamName }
+      : null,
+    semifinalists: teams,
+    teamCodes: answerKey?.teamCodes || teams.map((team) => team.code),
+    topScorerName: answerKey?.topScorerName || null,
+    topScorerGoals: answerKey?.topScorerGoals ?? null
+  };
+}
+
+async function saveSemifinalAnswerKeyUnlocked(input) {
+  const [teamsByCode, existing] = await Promise.all([
+    listTournamentTeams(),
+    answerKeyRepository.findSemifinalAnswerKey()
+  ]);
   const semifinalists = input.teamCodes.map((code) => teamsByCode.get(normalizeTeamCode(code)));
-  if (!champion || semifinalists.some((team) => !team)) {
+  if (semifinalists.some((team) => !team)) {
     throw createServiceError(400, 'INVALID_SEMIFINAL_TEAM', 'Selecione apenas times cadastrados na competicao.');
+  }
+  if (existing?.championTeamCode && !input.teamCodes.includes(existing.championTeamCode)) {
+    throw createServiceError(409, 'CHAMPION_NOT_SEMIFINALIST', 'O campeao salvo deve permanecer entre os semifinalistas.');
   }
 
   const answerKey = {
-    champion,
+    ...toPersistedAnswerKey(existing),
     semifinalists,
-    teamCodes: semifinalists.map((team) => team.code),
+    teamCodes: semifinalists.map((team) => team.code)
+  };
+  const updatedPredictions = await answerKeyRepository.saveAnswerKeyAndScores(
+    answerKey,
+    (prediction) => calculateExtraPredictionPoints(prediction, answerKey)
+  );
+
+  return {
+    answerKey: await answerKeyRepository.findSemifinalAnswerKey(),
+    updatedPredictions
+  };
+}
+
+async function saveSemifinalAnswerKey(input) {
+  return answerKeyRepository.withAnswerKeyLock(() => saveSemifinalAnswerKeyUnlocked(input));
+}
+
+async function saveFinalAnswerKeyUnlocked(input) {
+  const existing = await answerKeyRepository.findSemifinalAnswerKey();
+  if (existing?.teamCodes?.filter(Boolean).length !== 4) {
+    throw createServiceError(409, 'SEMIFINAL_ANSWER_KEY_REQUIRED', 'Salve os semifinalistas antes do resultado final.');
+  }
+
+  const championCode = normalizeTeamCode(input.championTeamCode);
+  const champion = existing.teams.find((team) => normalizeTeamCode(team.code) === championCode);
+  if (!champion) {
+    throw createServiceError(400, 'CHAMPION_NOT_SEMIFINALIST', 'O campeao deve estar entre os semifinalistas salvos.');
+  }
+
+  const answerKey = {
+    ...toPersistedAnswerKey(existing),
+    champion,
     topScorerName: input.topScorerName,
     topScorerGoals: input.topScorerGoals
   };
@@ -150,6 +207,10 @@ async function saveSemifinalAnswerKey(input) {
   };
 }
 
+async function saveFinalAnswerKey(input) {
+  return answerKeyRepository.withAnswerKeyLock(() => saveFinalAnswerKeyUnlocked(input));
+}
+
 module.exports = {
   calculateExtraPredictionPoints,
   calculateSemifinalPoints,
@@ -157,5 +218,6 @@ module.exports = {
   normalizeTeamCode,
   isScorerNameMatch,
   normalizePersonName,
+  saveFinalAnswerKey,
   saveSemifinalAnswerKey
 };

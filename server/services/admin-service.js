@@ -291,6 +291,12 @@ async function saveSemifinalAnswerKey(input) {
   return { ...result, updatedParticipants: ranking.updatedParticipants };
 }
 
+async function saveFinalAnswerKey(input) {
+  const result = await semifinalAnswerKeyService.saveFinalAnswerKey(input);
+  const ranking = await rankingService.recalculateRankingPositions({ forceSnapshot: true });
+  return { ...result, updatedParticipants: ranking.updatedParticipants };
+}
+
 function generateTemporaryPassword() {
   const city = TEMPORARY_PASSWORD_CITIES[crypto.randomInt(TEMPORARY_PASSWORD_CITIES.length)];
   const number = crypto.randomInt(100, 1000);
@@ -325,6 +331,7 @@ module.exports = {
   loginAdmin,
   recalculateRanking,
   resetParticipantPassword,
+  saveFinalAnswerKey,
   saveSemifinalAnswerKey,
   setRegistrationState,
   updateMatch,
