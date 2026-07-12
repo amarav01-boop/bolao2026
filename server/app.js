@@ -13,6 +13,8 @@ const homeRoutes = require('./routes/home-routes');
 const revealRoutes = require('./routes/reveal-routes');
 const chatRoutes = require('./routes/chat-routes');
 const healthRoutes = require('./routes/health-routes');
+const metricsRoutes = require('./routes/metrics-routes');
+const { createHttpMetricsMiddleware } = require('./observability/metrics');
 const { notFoundHandler, errorHandler } = require('./middleware/error-handler');
 
 loadEnv();
@@ -55,6 +57,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(createSessionMiddleware());
+app.use(createHttpMetricsMiddleware());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -64,6 +67,7 @@ app.use('/api/home', homeRoutes);
 app.use('/api/reveal', revealRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/metrics', metricsRoutes);
 
 const clientDist = path.resolve(__dirname, '..', 'client', 'dist');
 if (fs.existsSync(clientDist)) {

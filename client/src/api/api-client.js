@@ -38,3 +38,24 @@ export async function fetchJson(path, options = {}) {
 
   return payload;
 }
+
+export async function fetchText(path, options = {}) {
+  const response = await fetch(buildUrl(path), {
+    credentials: 'include',
+    headers: {
+      Accept: 'text/plain, */*',
+      ...(options.headers || {})
+    },
+    ...options
+  });
+
+  const rawText = await response.text();
+
+  if (!response.ok) {
+    const error = new Error(rawText || `A requisição falhou com status ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return rawText;
+}

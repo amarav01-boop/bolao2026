@@ -3,6 +3,7 @@ import { renderEmptyState } from '../components/empty-state.js';
 import { renderFormField } from '../components/form-field.js';
 import { renderStatusMessage } from '../components/status-message.js';
 import { escapeHtml } from '../utils/escape-html.js';
+import { formatBytes, formatDurationSeconds } from '../utils/formatters.js';
 
 const BRAND_LABEL = 'BOLÃO DA COPA 2026 - AMIGOS DA VILA OLÍMPIA';
 
@@ -143,6 +144,104 @@ function renderSummaryCards(summary = {}) {
         )
         .join('')}
     </div>
+  `;
+}
+
+function renderMonitoringPanel(state) {
+  const snapshot = state.monitoringSnapshot;
+  const metricsCards = snapshot
+    ? [
+        { label: 'Tempo ligado', value: formatDurationSeconds(snapshot.uptimeSeconds) },
+        { label: 'Memória', value: formatBytes(snapshot.memoryBytes) },
+        { label: 'Heap', value: formatBytes(snapshot.heapBytes) },
+        { label: 'Em andamento', value: String(snapshot.inFlightRequests || 0) },
+        { label: 'Requisições', value: String(snapshot.totalRequests || 0) },
+        { label: 'Erros 5xx', value: String(snapshot.totalErrors || 0) }
+      ]
+    : [];
+
+  return `
+    <section class="panel panel--span-12" id="admin-monitoring">
+      <div class="panel__header">
+        <p class="panel__label">Monitoramento</p>
+        <span class="chip chip--accent">Sem Docker</span>
+      </div>
+      ${state.monitoringLoadError
+        ? renderStatusMessage({
+            tone: 'danger',
+            title: 'Falha ao carregar métricas',
+            body: state.monitoringLoadError
+          })
+        : ''}
+      ${snapshot
+        ? `
+          <div class="monitoring-grid">
+            ${metricsCards
+              .map(
+                (card) => `
+                  <section class="panel monitoring-card">
+                    <p class="panel__label">${escapeHtml(card.label)}</p>
+                    <strong class="monitoring-card__value">${escapeHtml(card.value)}</strong>
+                  </section>
+                `
+              )
+              .join('')}
+          </div>
+          <div style="height: 1rem"></div>
+          <div class="monitoring-route-panel">
+            <div class="panel__header">
+              <p class="panel__label">Rotas mais acessadas</p>
+              <span class="chip">Atualizado às ${escapeHtml(new Date(snapshot.generatedAt).toLocaleTimeString('pt-BR'))}</span>
+            </div>
+            ${
+              snapshot.routes.length
+                ? `
+                  <table class="ranking-table">
+                    <thead>
+                      <tr>
+                        <th>Rota</th>
+                        <th>Requisições</th>
+                        <th>Erros</th>
+                        <th>Taxa de erro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${snapshot.routes
+                        .map((route) => {
+                          const errorRate = route.requests ? Math.round((route.errors / route.requests) * 100) : 0;
+                          return `
+                            <tr>
+                              <td>${escapeHtml(route.route)}</td>
+                              <td>${escapeHtml(String(route.requests))}</td>
+                              <td>${escapeHtml(String(route.errors))}</td>
+                              <td>${escapeHtml(String(errorRate))}%</td>
+                            </tr>
+                          `;
+                        })
+                        .join('')}
+                    </tbody>
+                  </table>
+                `
+                : renderEmptyState({
+                    title: 'Ainda sem tráfego relevante',
+                    body: 'Quando o servidor receber requisições, as rotas mais acessadas aparecem aqui.'
+                  })
+            }
+            <div class="monitoring-note">
+              <span class="chip ${snapshot.p95LatencySeconds !== null ? 'chip--accent' : 'chip--muted'}">
+                p95 ${snapshot.p95LatencySeconds === null ? 'indisponível' : `${formatDurationSeconds(snapshot.p95LatencySeconds)}`}
+              </span>
+              <span class="chip chip--muted">
+                Atualiza automaticamente enquanto o painel estiver aberto
+              </span>
+            </div>
+          </div>
+        `
+        : renderEmptyState({
+            title: 'Monitoramento carregando',
+            body: 'As métricas do backend aparecem aqui assim que o painel consulta o endpoint /api/metrics.'
+          })}
+    </section>
   `;
 }
 
@@ -961,6 +1060,8 @@ export function renderAdminDashboardPage(state) {
     </section>
 
     ${renderParticipantPasswordReset(state)}
+
+    ${renderMonitoringPanel(state)}
 
     <section class="panel panel--span-12" id="admin-gabarito">
       <div class="section-title">

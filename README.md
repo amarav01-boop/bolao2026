@@ -44,6 +44,16 @@ npm run dev:server
 npm run build:client
 ```
 
+## Monitoring
+
+This project exposes Prometheus-formatted metrics at `GET /api/metrics` and shows a live monitoring panel inside the admin dashboard.
+
+1. Start the API as usual.
+2. Log in to the admin panel.
+3. Open the `Monitoramento` section inside the dashboard.
+
+The monitoring panel updates automatically and does not require Docker, Grafana, or Prometheus to run locally.
+
 ## Environment
 
 Copy `.env.example` to `.env` and set the values for your local database and session secret. The target database architecture is MariaDB/MySQL. The default client API base URL points to `http://localhost:3000` so the dev browser and server stay same-site for session cookies.

@@ -30,6 +30,7 @@ import {
   updateAdminPhase
 } from './api/admin-api.js';
 import { getActivePhasePredictions, saveActivePhasePredictions } from './api/prediction-api.js';
+import { getMonitoringSnapshot } from './api/monitoring-api.js';
 import { getHomeState } from './api/home-api.js';
 import {
   createChatMessage,
@@ -52,6 +53,7 @@ const app = document.querySelector('#app');
 const toastRoot = document.querySelector('#toast-root');
 const DEFAULT_ADMIN_USERNAME = 'admin@bolao.local';
 const CHAT_POLL_INTERVAL_MS = 10000;
+const MONITORING_POLL_INTERVAL_MS = 15000;
 
 function getInitialRoute() {
   if (window.location.pathname.startsWith('/regras')) {
@@ -240,6 +242,9 @@ const state = {
   revealState: null,
   revealLoadError: null,
   revealSelectedParticipantId: '',
+  monitoringSnapshot: null,
+  monitoringLoadError: null,
+  monitoringTimer: null,
   toast: null,
   toastTimer: null,
   adminForms: {
@@ -381,6 +386,9 @@ function setRoute(nextRoute) {
   if (nextRoute !== 'participant') {
     clearChatPolling();
   }
+  if (nextRoute !== 'admin') {
+    clearMonitoringPolling();
+  }
 
   state.route = nextRoute;
   const routePaths = {
@@ -513,6 +521,13 @@ function clearPredictionSaveTimer() {
   if (state.predictionSaveTimer) {
     window.clearTimeout(state.predictionSaveTimer);
     state.predictionSaveTimer = null;
+  }
+}
+
+function clearMonitoringPolling() {
+  if (state.monitoringTimer) {
+    window.clearTimeout(state.monitoringTimer);
+    state.monitoringTimer = null;
   }
 }
 
@@ -683,6 +698,12 @@ function resetPredictionWorkspace() {
   state.predictionLoadError = null;
 }
 
+function resetMonitoringWorkspace() {
+  clearMonitoringPolling();
+  state.monitoringSnapshot = null;
+  state.monitoringLoadError = null;
+}
+
 async function loadParticipantWorkspace() {
   clearPredictionSaveTimer();
   clearChatPolling();
@@ -737,6 +758,43 @@ async function loadRankingWorkspace() {
   } catch (error) {
     state.rankingState = null;
     state.rankingLoadError = error.message;
+  }
+}
+
+function scheduleMonitoringPolling() {
+  clearMonitoringPolling();
+
+  if (!state.adminSession || state.route !== 'admin' || state.connection === 'offline') {
+    return;
+  }
+
+  state.monitoringTimer = window.setTimeout(async () => {
+    state.monitoringTimer = null;
+
+    try {
+      state.monitoringSnapshot = await getMonitoringSnapshot();
+      state.monitoringLoadError = null;
+    } catch (error) {
+      state.monitoringLoadError = error.message;
+    } finally {
+      if (state.adminSession && state.route === 'admin') {
+        render();
+      }
+      scheduleMonitoringPolling();
+    }
+  }, MONITORING_POLL_INTERVAL_MS);
+}
+
+async function loadMonitoringWorkspace() {
+  clearMonitoringPolling();
+  state.monitoringLoadError = null;
+
+  try {
+    state.monitoringSnapshot = await getMonitoringSnapshot();
+    scheduleMonitoringPolling();
+  } catch (error) {
+    state.monitoringSnapshot = null;
+    state.monitoringLoadError = error.message;
   }
 }
 
@@ -1418,6 +1476,7 @@ function bindAdminForms() {
 
         try {
           await refreshAdminOverview();
+          await loadMonitoringWorkspace();
         } catch (overviewError) {
           state.adminOverview = null;
           state.banner = {
@@ -1442,6 +1501,7 @@ function bindAdminForms() {
       } finally {
         state.adminSession = null;
         state.adminOverview = null;
+        resetMonitoringWorkspace();
         resetPhaseForm();
         resetMatchForm();
         state.adminLoginFormError = null;
@@ -1870,6 +1930,7 @@ async function boot() {
       state.adminSavedAnswerKey = normalizeExtraAnswerKeyForm(answerKey.data.answerKey);
       state.adminForms.semifinalAnswerKey = normalizeExtraAnswerKeyForm(answerKey.data.answerKey);
       hydrateAdminFormsFromOverview();
+      await loadMonitoringWorkspace();
     } else if (pathRoute === 'admin') {
       state.route = 'admin';
     }
@@ -1887,6 +1948,10 @@ async function boot() {
     } else {
       resetPredictionWorkspace();
       resetChatWorkspace();
+    }
+
+    if (state.adminSession && state.route === 'admin' && !state.monitoringSnapshot && !state.monitoringLoadError) {
+      await loadMonitoringWorkspace();
     }
   } catch (error) {
     state.connection = 'offline';
@@ -1917,6 +1982,12 @@ window.addEventListener('popstate', () => {
     clearChatPolling();
   } else if (state.participantSession) {
     scheduleChatPolling();
+  }
+
+  if (state.route !== 'admin') {
+    clearMonitoringPolling();
+  } else if (state.adminSession) {
+    scheduleMonitoringPolling();
   }
 
   render();
