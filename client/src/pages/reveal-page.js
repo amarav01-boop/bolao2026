@@ -104,7 +104,7 @@ function normalizeRevealText(value) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-function isRoundOf16Phase(phase) {
+function hasRevealPattern(phase, patterns) {
   const haystack = [
     phase?.code,
     phase?.name,
@@ -113,59 +113,95 @@ function isRoundOf16Phase(phase) {
     .map(normalizeRevealText)
     .join(' ');
 
-  return (
-    haystack.includes('round of 16') ||
-    haystack.includes('oitavas de final') ||
-    haystack.includes('oitavas')
-  );
+  return patterns.some((pattern) => pattern.test(haystack));
+}
+
+function isFinalsPhase(phase) {
+  return hasRevealPattern(phase, [
+    /\bfinais\b/u,
+    /\bfinals\b/u,
+    /\bfinal\b/u
+  ]);
+}
+
+function isRoundOf4Phase(phase) {
+  return hasRevealPattern(phase, [
+    /\bround of 4\b/u,
+    /\bsemifinals\b/u,
+    /\bsemifinal\b/u,
+    /\bsemi finals\b/u,
+    /\bsemifinais\b/u
+  ]);
+}
+
+function isRoundOf16Phase(phase) {
+  return hasRevealPattern(phase, [
+    /\bround of 16\b/u,
+    /\boitavas de final\b/u,
+    /\boitavas\b/u
+  ]);
 }
 
 function isRoundOf8Phase(phase) {
-  const haystack = [
-    phase?.code,
-    phase?.name,
-    phase?.roundLabel
-  ]
-    .map(normalizeRevealText)
-    .join(' ');
-
-  return (
-    haystack.includes('round of 8') ||
-    haystack.includes('quarterfinal') ||
-    haystack.includes('quartas de final') ||
-    haystack.includes('quartas')
-  );
+  return hasRevealPattern(phase, [
+    /\bround of 8\b/u,
+    /\bquarterfinals?\b/u,
+    /\bquartas de final\b/u,
+    /\bquartas\b/u
+  ]);
 }
 
 function isSecondRoundPhase(phase) {
-  const haystack = [
-    phase?.code,
-    phase?.name,
-    phase?.roundLabel
-  ]
-    .map(normalizeRevealText)
-    .join(' ');
+  return hasRevealPattern(phase, [
+    /\bsecond round\b/u,
+    /\bsegunda rodada\b/u
+  ]);
+}
 
-  return (
-    haystack.includes('second round') ||
-    haystack.includes('segunda rodada')
-  );
+function getRevealPhaseCodePriority(phase) {
+  switch (normalizeRevealText(phase?.code)) {
+    case 'round-2':
+      return 0;
+    case 'round-4':
+      return 1;
+    case 'round-8':
+      return 2;
+    case 'round-16':
+      return 3;
+    case 'second-round':
+      return 4;
+    default:
+      return null;
+  }
 }
 
 function getRevealPhasePriority(phase) {
-  if (isRoundOf8Phase(phase)) {
+  const codePriority = getRevealPhaseCodePriority(phase);
+  if (codePriority !== null) {
+    return codePriority;
+  }
+
+  if (isFinalsPhase(phase)) {
     return 0;
   }
 
-  if (isRoundOf16Phase(phase)) {
+  if (isRoundOf4Phase(phase)) {
     return 1;
   }
 
-  if (isSecondRoundPhase(phase)) {
+  if (isRoundOf8Phase(phase)) {
     return 2;
   }
 
-  return 3;
+  if (isRoundOf16Phase(phase)) {
+    return 3;
+  }
+
+  if (isSecondRoundPhase(phase)) {
+    return 4;
+  }
+
+  return 5;
 }
 
 function renderRevealedGroupStandings(group, showClassification = true) {
@@ -420,7 +456,7 @@ function renderRevealedPhases(revealState) {
             <p class="panel__label">${escapeHtml(phasePayload.phase.name)}</p>
             <span class="chip chip--accent">Revelado</span>
           </div>
-          ${renderRevealExtras(phasePayload.extras)}
+          ${isFinalsPhase(phasePayload.phase) ? renderRevealExtras(phasePayload.extras) : ''}
           <div class="revealed-group-list">
             ${phasePayload.groups
               .map(

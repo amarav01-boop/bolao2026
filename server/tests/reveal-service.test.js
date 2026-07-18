@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { buildRevealExtras, getRevealState, mergePredictions } = require('../services/reveal-service');
 const competitionRepository = require('../repositories/competition-repository');
 const participantService = require('../services/participant-service');
+const predictionRepository = require('../repositories/prediction-repository');
 const semifinalAnswerKeyService = require('../services/semifinal-answer-key-service');
 
 test('buildRevealExtras exposes all participant extra predictions as read-only data', () => {
@@ -129,6 +130,66 @@ test('getRevealState does not load official extra key before reveal is enabled',
     participantService.getSessionParticipant = originalGetSessionParticipant;
     participantService.listPublicParticipants = originalListPublicParticipants;
     competitionRepository.listCompetitionPhases = originalListCompetitionPhases;
+    semifinalAnswerKeyService.getSemifinalAnswerKey = originalGetSemifinalAnswerKey;
+  }
+});
+
+test('getRevealState falls back to group-stage extras for finals reveal', async () => {
+  const originalGetSessionParticipant = participantService.getSessionParticipant;
+  const originalListPublicParticipants = participantService.listPublicParticipants;
+  const originalListCompetitionPhases = competitionRepository.listCompetitionPhases;
+  const originalListCompetitionMatchesByPhaseId = competitionRepository.listCompetitionMatchesByPhaseId;
+  const originalListParticipantPredictionsForPhase = predictionRepository.listParticipantPredictionsForPhase;
+  const originalFindExtraPredictionForPhase = predictionRepository.findExtraPredictionForPhase;
+  const originalGetSemifinalAnswerKey = semifinalAnswerKeyService.getSemifinalAnswerKey;
+
+  const groupStageExtraPrediction = {
+    id: 99,
+    participantId: 1,
+    phaseId: 1,
+    championTeamCode: 'BRA',
+    championTeamName: 'Brasil',
+    topScorerName: 'Vinicius Junior',
+    topScorerGoals: 7,
+    semiFinalist1Code: 'BRA',
+    semiFinalist1Name: 'Brasil',
+    semiFinalist2Code: 'FRA',
+    semiFinalist2Name: 'Franca',
+    semiFinalist3Code: 'ARG',
+    semiFinalist3Name: 'Argentina',
+    semiFinalist4Code: 'ESP',
+    semiFinalist4Name: 'Espanha',
+    pointsAwarded: 45
+  };
+
+  participantService.getSessionParticipant = () => ({ id: 1 });
+  participantService.listPublicParticipants = async () => [{ id: 1, nickname: 'Vitor' }];
+  competitionRepository.listCompetitionPhases = async () => [
+    { id: 1, code: 'group-stage', name: 'Fase de Grupos', stageType: 'group', revealEnabled: true },
+    { id: 2, code: 'round-2', name: 'Finais', stageType: 'knockout', revealEnabled: true }
+  ];
+  competitionRepository.listCompetitionMatchesByPhaseId = async () => [];
+  predictionRepository.listParticipantPredictionsForPhase = async () => [];
+  predictionRepository.findExtraPredictionForPhase = async (participantId, phaseId) =>
+    phaseId === 1 ? groupStageExtraPrediction : null;
+  semifinalAnswerKeyService.getSemifinalAnswerKey = async () => null;
+
+  try {
+    const state = await getRevealState({}, '');
+    const finalsPhase = state.phases.find((phasePayload) => phasePayload.phase.code === 'round-2');
+
+    assert.ok(finalsPhase);
+    assert.ok(finalsPhase.extras);
+    assert.equal(finalsPhase.extras.champion.name, 'Brasil');
+    assert.equal(finalsPhase.extras.topScorer.name, 'Vinicius Junior');
+    assert.equal(finalsPhase.extras.pointsAwarded, 45);
+  } finally {
+    participantService.getSessionParticipant = originalGetSessionParticipant;
+    participantService.listPublicParticipants = originalListPublicParticipants;
+    competitionRepository.listCompetitionPhases = originalListCompetitionPhases;
+    competitionRepository.listCompetitionMatchesByPhaseId = originalListCompetitionMatchesByPhaseId;
+    predictionRepository.listParticipantPredictionsForPhase = originalListParticipantPredictionsForPhase;
+    predictionRepository.findExtraPredictionForPhase = originalFindExtraPredictionForPhase;
     semifinalAnswerKeyService.getSemifinalAnswerKey = originalGetSemifinalAnswerKey;
   }
 });

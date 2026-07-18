@@ -180,6 +180,10 @@ function buildRevealExtras(extraPrediction, answerKey = null) {
   };
 }
 
+function isFinalsPhase(phase) {
+  return phase?.code === 'round-2';
+}
+
 async function getRevealState(session, selectedParticipantId) {
   const participant = participantService.getSessionParticipant(session);
 
@@ -221,6 +225,10 @@ async function getRevealState(session, selectedParticipantId) {
 
   const phasePayload = [];
   const answerKey = await semifinalAnswerKeyService.getSemifinalAnswerKey();
+  const groupStagePhase = phases.find((phase) => phase.code === 'group-stage') || null;
+  const groupStageExtraPrediction = groupStagePhase
+    ? await predictionRepository.findExtraPredictionForPhase(selectedParticipant.id, groupStagePhase.id)
+    : null;
 
   for (const phase of revealedPhases) {
     const [matches, predictions, extraPrediction] = await Promise.all([
@@ -229,10 +237,13 @@ async function getRevealState(session, selectedParticipantId) {
       predictionRepository.findExtraPredictionForPhase(selectedParticipant.id, phase.id)
     ]);
     const mergedMatches = mergePredictions(matches, predictions);
+    const resolvedExtraPrediction = isFinalsPhase(phase) && !extraPrediction
+      ? groupStageExtraPrediction
+      : extraPrediction;
 
     phasePayload.push({
       phase,
-      extras: buildRevealExtras(extraPrediction, answerKey),
+      extras: buildRevealExtras(resolvedExtraPrediction, answerKey),
       groups: buildGroups(mergedMatches),
       matches: mergedMatches
     });
@@ -251,5 +262,6 @@ module.exports = {
   buildGroups,
   buildRevealExtras,
   getRevealState,
+  isFinalsPhase,
   mergePredictions
 };
